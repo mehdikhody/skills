@@ -56,7 +56,7 @@ SMS always goes through FarazSMS, with a console transport in dev.
 
 - The project directory is the current directory or the custom path. All later commands run inside it.
 - **App name** = the directory's base name, converted to kebab-case: lowercase, and every run of characters other than `a-z` and `0-9` becomes `-`, trimmed of leading and trailing `-`. It is the `package.json` name, and the database name is the app name with `-` replaced by `_`. Don't ask for a name.
-- If the directory exists and holds anything other than `.git`, stop and ask whether to continue there. Never delete files to make room.
+- If the directory exists and holds anything other than `.git` and this skill's own install (`.agents/`, `.claude/`, `skills-lock.json`), stop and ask whether to continue there. Never delete files to make room.
 
 ## 2. Create the app
 
@@ -66,7 +66,9 @@ From inside the project directory:
 npx sv create . --template minimal --types ts --no-add-ons --install npm
 ```
 
-Then set `"name"` in `package.json` to the app name. Initialise git unless the directory already is a repo (`git init -b main`), then `git add -A && git commit -m "Create SvelteKit app"`.
+If the directory already holds this skill's install (`.agents/`, `.claude/`, `skills-lock.json`), run the same command with `.sv-create` in place of `.`, move everything from `.sv-create/` up into the project directory (no names collide), and delete the empty `.sv-create/`.
+
+Then set `"name"` in `package.json` to the app name. Initialise git unless the directory already is a repo (`git init -b main`), then `git add -A -- . ':!.agents' ':!.claude' ':!skills-lock.json' && git commit -m "Create SvelteKit app"`. The skill's own files are committed with the skills in step 13.
 
 ## 3. Add-ons
 
@@ -106,7 +108,7 @@ Write `DATABASE_URL` to `.env` (git-ignored):
 - **SQLite**: `DATABASE_URL="local.db"`.
 - **Custom URL**: the URL the user gave, unchanged.
 - **Docker Desktop**: create the database in the user's running container. Don't ask for credentials; find them:
-  1. `docker ps --format "{{.Names}} {{.Image}} {{.Ports}}"`: pick the running container whose image is `postgres*` (PostgreSQL) or `mysql*`/`mariadb*` (MySQL). If none is running, stop and ask the user to start one or give a custom URL.
+  1. `docker ps --format "{{.Names}} {{.Image}} {{.Ports}}"`: pick the running container whose image is `postgres*` (PostgreSQL) or `mysql*`/`mariadb*` (MySQL). If `docker ps` fails because the engine isn't running and Docker Desktop is installed, start it (Windows: `Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"`; macOS: `open -a Docker`) and retry `docker ps` for up to 2 minutes; do the other steps meanwhile. If no matching container is running, stop and ask the user to start one or give a custom URL.
   2. Read its environment with `docker inspect <container> --format "{{range .Config.Env}}{{println .}}{{end}}"`. The host port comes from the `docker ps` ports column.
      - Postgres: `POSTGRES_USER` (default `postgres`) and `POSTGRES_PASSWORD`; port usually `5432`.
      - MySQL: user `root` with `MYSQL_ROOT_PASSWORD`; port usually `3306`.
@@ -195,7 +197,12 @@ These combinations are type-checked, linted and run through `drizzle-kit generat
 
 ## 7. Database schema push (only with drizzle)
 
-`npm run db:push`. If it prompts, the database is new, so accept creating every table. With database roles, the default roles are seeded the first time the app starts (`init` in `hooks.server.ts`).
+sv's `drizzle.config.ts` has `strict: true`, so `npm run db:push` always asks for confirmation, and without a terminal it fails with "Interactive prompts require a TTY".
+
+- **Docker Desktop or SQLite**: the database was just created and is empty, so push without the prompt: `npx drizzle-kit push --strict=false --verbose=false --force`. It's done when it prints `[✓] Changes applied`.
+- **Custom URL**: the database may already hold data, so never pass `--force`. Run `npm run db:push` in a terminal the user can see (in the Claude desktop app, `run_in_terminal`) and ask them to review and confirm it.
+
+With database roles, the default roles are seeded the first time the app starts (`init` in `hooks.server.ts`).
 
 ## 8. shadcn-svelte
 
@@ -205,7 +212,7 @@ Run init with every path and alias given, so its only question is the final "ove
 (for i in $(seq 1 90); do sleep 2; printf '\r'; done) | timeout 200 npx -y shadcn-svelte@latest init --preset b1f2J64kkE --css src/routes/layout.css --lib-alias "#lib" --components-alias "#lib/components" --utils-alias "#lib/utils" --hooks-alias "#lib/hooks" --ui-alias "#lib/components/ui"
 ```
 
-Run it in the shell; don't hand it to the user. It's done when the output ends with "Project initialization completed" and `components.json` exists. If it times out instead, run it once more the same way before reporting a failure. Then `npm ci`.
+Run it in the shell; don't hand it to the user. It's done when the output ends with "Project initialization completed" and `components.json` exists. If it times out instead, run it once more the same way before reporting a failure. Then `npm ci`. On npm 12 and later, npm warns that esbuild's install scripts are blocked. That's harmless (Vite, the checks and the dev server all work), so don't approve them.
 
 ### Persian font (when `fa` is one of the locales)
 
@@ -222,17 +229,30 @@ Run this after shadcn init, because init overwrites `layout.css`:
    	font-family: 'Vazirmatn', 'Roboto Variable', sans-serif;
    }
    ```
-4. Check it in the browser on a `fa` page: the computed `font-family` of body text and headings starts with Vazirmatn, and on an `en` page it doesn't.
+4. Check it in the browser on a `fa` page: the computed `font-family` of body text and headings starts with Vazirmatn, and on an `en` page it doesn't. sv's Paraglide strategy picks the locale from a cookie, not the URL, so `/en` still renders `fa`. To get an `en` page, set `document.cookie = 'PARAGLIDE_LOCALE=en; path=/'`, reload, and clear the cookie afterwards.
 
 ## 9. Skills
 
-Copy `<skill>/skills-lock.json` to the app root and restore every pinned third-party skill for Claude Code:
+Copy `<skill>/skills-lock.json` to the app root and restore every pinned third-party skill for Claude Code. If the root already has a `skills-lock.json` (it pins this skill when the skill was installed into the project), merge instead of overwriting: keep its existing `skills` entries and add the template's.
 
 ```sh
 npx skills experimental_install -a claude-code
 ```
 
 This installs 38 skills into `.agents/skills/`, linked from `.claude/skills/`: find-skills, the Matt Pocock skills, frontend-design, ui-taste, ios-design, web-design-guidelines, caveman, caveman-commit, agent-browser, ponytail, shadcn-svelte and seo-audit. `sv add ai-tools` already put the Svelte skills in `.claude/skills/`. Run `npx skills update -p -y` only if the user wants the latest upstream versions instead of the pinned ones.
+
+Then keep the installed skills away from the project's tooling:
+
+1. **Formatter and linter.** Add `/.agents/`, `/.claude/skills/` and `/graphify-out/` to `.prettierignore`. In `eslint.config.js`, add `{ ignores: ['.agents/', '.claude/skills/', 'graphify-out/'] }` right after `includeIgnoreFile(gitignorePath)`. Without this, `npm run format` in step 13 rewrites about 150 skill files, and `npm run lint` fails on `.svelte` files inside the shadcn-svelte skill. If the format already ran, restore the skills with `npx skills experimental_install -a claude-code` and `graphify install --project`.
+2. **Git.** On Windows, the links in `.claude/skills/` are junctions, and git would commit each one as a full second copy of its `.agents/skills/` folder. Add to `.gitignore`:
+   ```gitignore
+   # Skill links into .agents/skills; restore with: npx skills experimental_install -a claude-code
+   .claude/skills/*
+   !.claude/skills/graphify/
+   !.claude/skills/svelte-code-writer/
+   !.claude/skills/svelte-core-bestpractices/
+   ```
+   The un-ignored entries are real folders: the Svelte skills from `sv add ai-tools`, and graphify's skill from step 10.
 
 ## 10. graphify
 
@@ -244,7 +264,7 @@ This installs 38 skills into `.agents/skills/`, linked from `.claude/skills/`: f
 
 ## 11. CLAUDE.md, agent rules and CHANGELOG.md
 
-1. Copy `<skill>/templates/CLAUDE.md` to the app root, and `<skill>/templates/docs/agents/` (`rules.md` and `architecture.md`) to `docs/agents/`. `CLAUDE.md` holds the stack overview, imports `rules.md` (`@docs/agents/rules.md`, loaded every session) and points to `architecture.md`, which the agent reads before it touches code under `src/`.
+1. Copy `<skill>/templates/CLAUDE.md` to the app root, and `<skill>/templates/docs/agents/` (`rules.md` and `architecture.md`) to `docs/agents/`. graphify (step 10) has already created a root `CLAUDE.md` with a `## graphify` block: keep that block and append it after the template's content, or Claude Code stops using the graph. `CLAUDE.md` holds the stack overview, imports `rules.md` (`@docs/agents/rules.md`, loaded every session) and points to `architecture.md`, which the agent reads before it touches code under `src/`.
    Resolve the markers with the same answers as step 5: `node <skill>/scripts/apply-tags.mjs --db … --auth … --roles … CLAUDE.md docs/agents/architecture.md`. That picks the stack lines in `CLAUDE.md`, and in `architecture.md` the database's DB-schema notes, the permissions sections and the `post` sentence. Then replace `{{APP_NAME}}` in `CLAUDE.md`, and run `grep -rn "@if \|#if \|#endif\|#file-if" CLAUDE.md docs/agents`: it must find nothing.
    The `## Mobile view (ios-design)` section of `docs/agents/rules.md` is the **Mobile only** answer from step 1. For **Desktop too**, replace that whole section (its heading and all its bullets) with the block below:
    ```markdown
@@ -275,7 +295,8 @@ It writes `docs/agents/*.md` and adds an `## Agent skills` block to the root `CL
 ## 13. Checks and commits
 
 1. Compile Paraglide messages first: `npx @inlang/paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide`. Otherwise `#lib/paraglide/*` imports don't resolve until Vite has run once. Then run `npm run format`, `npm run lint` and `npm run check`, and fix anything they report.
-2. Commit in logical groups (one commit per reason: add-ons, database + auth scaffold, UI setup, skills + graphify, agent docs). No AI attribution in these commit messages: the project's own `docs/agents/rules.md` forbids it.
+2. Commit in logical groups (one commit per reason: add-ons, database + auth scaffold, UI setup, skills + graphify, agent docs). Stage each group's paths explicitly, never `git add -A`: the format run also touches files from earlier groups, and graphify can leave backup files such as `.claude/settings.json.graphify-bak` (delete those). No AI attribution in these commit messages: the project's own `docs/agents/rules.md` forbids it.
+3. graphify's post-commit hook rebuilds the graph in the background after every commit. After the last commit, wait about 10 seconds and run `git status --short`. If only `graphify-out/` changed, commit it alone as "Update graphify graph", then check once more. Any other leftover is a bug in this run: report it.
 
 ## 14. Report
 

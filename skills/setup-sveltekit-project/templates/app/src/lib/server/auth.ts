@@ -31,12 +31,12 @@ import {
 	USERNAME_MIN_LENGTH, // @if username
 	USERNAME_REGEX, // @if username
 } from '#lib/schema/user.schema.ts';
-import { OTPService } from '#services/otp.service.ts'; // @if phone
+import { SmsService } from '#services/sms.service.ts'; // @if phone
 
 // #if phone
 /** Sends a verification code by SMS; better-auth reports a thrown APIError to its caller. */
 const sendCode = async (to: string, code: string) => {
-	const result = await OTPService.send(to, code);
+	const result = await SmsService.sendOtp(to, code);
 	if (result.isErr()) {
 		if (result.error === 'INVALID_PHONE_NUMBER') {
 			throw APIError.from('BAD_REQUEST', {

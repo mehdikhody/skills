@@ -10,7 +10,7 @@ Uses:
 - better-auth for sign-in: phone number + password, phone verified by SMS at signup <!-- @if login-phone-password -->
 - better-auth for sign-in: passwordless SMS codes to the phone <!-- @if login-phone-otp -->
 - better-auth for sign-in: email + password <!-- @if login-email -->
-- FarazSMS for SMS: `OTPService` (`#services/otp.service.ts`) sends codes through `FarazsmsService` (`#services/farazsms.service.ts`); codes are logged in dev <!-- @if phone -->
+- SMS through `SmsService` (`#services/sms.service.ts`): `send` for free text, `sendPattern` for approved templates, `sendOtp` for verification codes. It sends through FarazSMS once `FARAZSMS_API_KEY` and `FARAZSMS_LINE_NUMBER` are set, otherwise logs to the console in dev <!-- @if phone -->
 - CASL (`@casl/ability`) for permissions, with roles hard-coded in `#lib/permissions.ts` <!-- @if roles-hardcoded -->
 - CASL (`@casl/ability`) for permissions, with roles and their rules stored in the `role` / `role_permission` tables <!-- @if roles-db -->
 - Zod, neverthrow (`Result` / `ok` / `err`)

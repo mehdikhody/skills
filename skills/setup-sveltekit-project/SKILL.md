@@ -50,7 +50,7 @@ Ask in rounds through `AskUserQuestion`, at most 4 questions per call. A questio
    - **Database roles**: `role` and `role_permission` tables. Each role's CASL rules are stored as rows, loaded per request (cached), and seeded with `GUEST`, `USER` and `ADMIN` on first start.
    - **No**: no roles and no `@casl/ability`. Services check sign-in and ownership directly.
 
-SMS always goes through FarazSMS, with a console transport in dev.
+SMS goes through `SmsService`: FarazSMS once its API key and line are set, otherwise the server console in dev (production refuses to send without them).
 
 **Project directory and name**
 
@@ -169,7 +169,7 @@ What this gives you:
 | `src/routes/auth/{login,register,reset-password}/*.remote.ts` | `form`/`command` remotes for login, the SMS code, registration and password reset, each in its route (whichever the method has); field errors via `invalid`, the rest via `error` |
 | `src/lib/remotes/auth.remote.ts` | the shared `getCurrentUser` query and `logout` command |
 | `src/lib/schema/user.schema.ts` | lengths, OTP settings, roles, and the Zod schemas of the auth forms |
-| `src/lib/phone-number.ts`, `src/lib/server/services/otp.service.ts`, `src/lib/server/services/farazsms.service.ts` | phone methods only: Iranian mobile normalising/masking; `OTPService` logs codes in dev or sends them through `FarazsmsService` |
+| `src/lib/phone-number.ts`, `src/lib/server/services/sms.service.ts` | phone methods only: Iranian mobile normalising/masking; `SmsService` sends free-text (`send`), pattern (`sendPattern`) and verification-code (`sendOtp`) SMS through FarazSMS when configured, else to the console in dev |
 | `post` schema, query, service and remote | the worked example of every layer |
 
 | With roles | |
@@ -186,10 +186,8 @@ These combinations are type-checked, linted and run through `drizzle-kit generat
 
 1. With a phone method, append to `.env.example`:
    ```sh
-   # How SMS is sent: console (development default; codes are logged) | farazsms (production default)
-   # SMS_TRANSPORT=console
-
-   # FarazSMS (IranPayamak) pattern sending; every pattern must be approved in the FarazSMS panel.
+   # FarazSMS (IranPayamak). With the API key and line set, SMS is sent for real; without them, dev logs it
+   # to the console. Every pattern must be approved in the FarazSMS panel.
    # FARAZSMS_API_KEY=
    # FARAZSMS_LINE_NUMBER=
    # FARAZSMS_PATTERN_VERIFICATION_CODE=   # one variable: code
@@ -306,5 +304,5 @@ Tell the user:
 - What was installed, the database name, and which steps were skipped and why.
 - With better-auth: the auth flows are ready as remote functions in `src/routes/auth/*/` (shared `getCurrentUser` and `logout` in `#lib/remotes/auth.remote.ts`); the login, registration and password-reset pages still need building next to them.
 - With database roles: the `GUEST`, `USER` and `ADMIN` roles are seeded on first start; change their rules in the `role_permission` table.
-- With a phone sign-in method: set the `FARAZSMS_*` variables and approve the verification-code pattern (variable `code`) in the FarazSMS panel before production. In dev, codes are printed to the server console.
+- With a phone sign-in method: set the `FARAZSMS_*` variables and approve the verification-code pattern (variable `code`) in the FarazSMS panel before production. Until they are set, dev prints SMS to the server console.
 - Next: `npm run dev`. Run `/graphify .` once if they want the full semantic graph on top of the AST one.

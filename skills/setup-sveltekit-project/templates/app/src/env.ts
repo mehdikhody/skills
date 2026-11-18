@@ -14,13 +14,9 @@ export const variables = defineEnvVars({
 	},
 	// #endif
 	// #if phone
-	SMS_TRANSPORT: {
-		description:
-			'How SMS is sent: `console` logs codes (development default), `farazsms` sends them (production default).',
-		schema: z.enum(['console', 'farazsms']).optional()
-	},
 	FARAZSMS_API_KEY: {
-		description: 'FarazSMS (IranPayamak) panel API key.',
+		description:
+			'FarazSMS (IranPayamak) panel API key. With FARAZSMS_LINE_NUMBER set, SMS is sent through FarazSMS; without them, dev logs SMS to the console and production refuses to send.',
 		schema: z.string().optional()
 	},
 	FARAZSMS_LINE_NUMBER: {

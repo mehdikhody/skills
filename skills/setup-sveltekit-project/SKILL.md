@@ -12,12 +12,15 @@ Work through the steps in order. Ask the user only the questions listed in step 
 
 ## 1. Ask up front
 
-Ask all of these in one `AskUserQuestion` round (the app name can come from the user's message; ask only if it didn't):
+Ask all of these up front through `AskUserQuestion`. A call takes at most 4 questions, so use two consecutive calls when all 5 are needed. The app name can come from the user's message; ask for it only if it didn't.
 
 1. **App name**: kebab-case folder and package name. Also used for the database name.
 2. **Drizzle + Postgres?** Default yes.
 3. **Paraglide base locale**: `fa` (then `en`) or `en` (then `fa`). Default `fa`.
 4. **better-auth?** Default yes. Login is username + password, with the phone number as an always-on SMS second step (FarazSMS). If drizzle is declined, better-auth is not offered (it needs the database).
+5. **ios-design on desktop too?** On mobile the site always gets an app-like layout following the `ios-design` skill (tab bar, navigation bar, sheets). Should desktop use it as well?
+   - **Mobile only** (default): desktop keeps a normal web layout (sidebar, top navigation, dialogs).
+   - **Desktop too**: the whole site is app-like, with the layout adapted for wide screens (iPadOS/macOS style).
 
 Create the app in the current working directory as `./<app-name>` unless the user named another parent folder. All later commands run inside `./<app-name>`.
 
@@ -177,6 +180,18 @@ This installs 38 skills into `.agents/skills/`, linked from `.claude/skills/`: f
 ## 11. CLAUDE.md and CHANGELOG.md
 
 1. Copy `<skill>/templates/CLAUDE.md` to the app root as `CLAUDE.md` and replace `{{APP_NAME}}`. Without better-auth, drop better-auth and CASL from the overview line, along with the sentence about the `post` example. Keep the rules.
+   The template's `## Mobile view (ios-design)` section is the **Mobile only** answer from step 1. For **Desktop too**, replace that whole section (its heading and all its bullets) with the block below:
+   ```markdown
+   ## App-like layout on every screen size (ios-design)
+
+   The website looks and behaves like a native app on every viewport. For layout and navigation, follow the `ios-design` skill: the app shell, tab-based top-level navigation, navigation-bar titles and back buttons, sheets, safe areas, touch-target sizes, and keyboard-aware forms. Apply its guidance to this web app (Svelte, Tailwind, shadcn-svelte). Ignore its SwiftUI, UIKit and React Native code.
+
+   - Mobile follows the iPhone patterns: a bottom tab bar, full-width content, and bottom sheets.
+   - Tablet and desktop (`md:` and up) adapt the same app the way iPadOS/macOS apps do. Don't just stretch the phone layout: the tab bar becomes a sidebar, content width is capped, and sheets can become side panels or centered modals.
+   - The app-like pieces (tab bar, sidebar, sheets) are built from shadcn-svelte components (e.g. `Sidebar`, `Drawer`, `Sheet`), following the UI components rule above.
+   - Account for `env(safe-area-inset-*)` and set `viewport-fit=cover` in `app.html`, so the tab bar and headers clear the notch and home indicator.
+   - For everything outside layout and navigation, `ios-design` does not apply.
+   ```
    `sv` also wrote `AGENTS.md` and `.claude/CLAUDE.md` (which imports `AGENTS.md`). Leave both: they hold the Svelte MCP instructions.
 2. Copy `<skill>/templates/CHANGELOG.md` and replace `{{DATE}}` with today's date.
 3. Add `.claude/worktrees/` to `.gitignore`. Exclude it from Playwright (`testIgnore`) and from the Vite watcher (`server.watch.ignored`).

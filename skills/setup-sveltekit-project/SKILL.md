@@ -39,7 +39,7 @@ Ask in rounds through `AskUserQuestion`, at most 4 questions per call. A questio
 
 **Round 3**
 
-7. **Sign-in method** (only if better-auth is yes). Every option also gets the `post` example and server-side auth flows (`AuthService` + `auth.remote.ts`):
+7. **Sign-in method** (only if better-auth is yes). Every option also gets the `post` example and server-side auth flows (`AuthService` + the remote functions in `src/routes/auth/`):
    - **Username + password + phone OTP** (default): sign in with username and password, then an always-on SMS code to the phone. The phone is required and verified at signup.
    - **Phone + password**: sign in with phone and password. The phone is verified by SMS code at signup; there's no second step at sign-in.
    - **Phone OTP only**: passwordless. Each sign-in sends an SMS code, and the first verified code creates the account.
@@ -166,7 +166,8 @@ What this gives you:
 | `…/schema/relations.schema.ts`, `…/schema/index.ts` | every relation in one file; a barrel of every table |
 | `src/lib/server/db/query/user.query.ts` | user lookups for `AuthService` |
 | `src/lib/server/services/auth.service.ts` | every sign-in flow through `auth.api.*`, with better-auth's error codes mapped to the app's own; `getCurrentUser` reloads the row |
-| `src/lib/remotes/auth.remote.ts` | `form`/`command`/`query` remotes for login, the SMS code, registration and password reset (whichever the method has); field errors via `invalid`, the rest via `error` |
+| `src/routes/auth/{login,register,reset-password}/*.remote.ts` | `form`/`command` remotes for login, the SMS code, registration and password reset, each in its route (whichever the method has); field errors via `invalid`, the rest via `error` |
+| `src/lib/remotes/auth.remote.ts` | the shared `getCurrentUser` query and `logout` command |
 | `src/lib/schema/user.schema.ts` | lengths, OTP settings, roles, and the Zod schemas of the auth forms |
 | `src/lib/phone-number.ts`, `src/lib/server/services/otp.service.ts`, `src/lib/server/services/farazsms.service.ts` | phone methods only: Iranian mobile normalising/masking; `OTPService` logs codes in dev or sends them through `FarazsmsService` |
 | `post` schema, query, service and remote | the worked example of every layer |
@@ -303,7 +304,7 @@ It writes `docs/agents/*.md` and adds an `## Agent skills` block to the root `CL
 Tell the user:
 
 - What was installed, the database name, and which steps were skipped and why.
-- With better-auth: the auth flows are ready as remote functions in `#lib/remotes/auth.remote.ts`; the login and registration pages still need building on them.
+- With better-auth: the auth flows are ready as remote functions in `src/routes/auth/*/` (shared `getCurrentUser` and `logout` in `#lib/remotes/auth.remote.ts`); the login, registration and password-reset pages still need building next to them.
 - With database roles: the `GUEST`, `USER` and `ADMIN` roles are seeded on first start; change their rules in the `role_permission` table.
 - With a phone sign-in method: set the `FARAZSMS_*` variables and approve the verification-code pattern (variable `code`) in the FarazSMS panel before production. In dev, codes are printed to the server console.
 - Next: `npm run dev`. Run `/graphify .` once if they want the full semantic graph on top of the AST one.

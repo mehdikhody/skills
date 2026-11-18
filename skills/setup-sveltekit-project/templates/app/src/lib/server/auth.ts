@@ -51,7 +51,7 @@ const sendCode = async (to: string, code: string) => {
 // #endif
 /**
  * better-auth configuration. Every sign-in flow runs on the server through `AuthService`
- * (`#services/auth.service.ts`), called from the remote functions in `#lib/remotes/auth.remote.ts`.
+ * (`#services/auth.service.ts`), called from the remote functions in `src/routes/auth/*/*.remote.ts` and `#lib/remotes/auth.remote.ts`.
  *
  * Tables are this project's own, one file each under `#db/schema/`, mapped below. When adding a
  * plugin, add the columns or tables it needs by hand (see its docs, or

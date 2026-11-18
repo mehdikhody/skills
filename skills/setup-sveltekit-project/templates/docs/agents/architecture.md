@@ -12,7 +12,7 @@ Tables: one file per table in `#lib/server/db/schema/<name>.schema.ts`, all rela
 <!-- #if auth -->
 better-auth's tables (`UserTable`, `SessionTable`, `AccountTable`, `VerificationTable`, `TwoFactorTable`) are this project's own files, mapped in `#lib/server/auth.ts` (`drizzleAdapter(db, { schema: { user: UserTable, … } })`). Don't run `auth generate` into them. When a better-auth plugin needs new columns or tables, add them by hand, using `npx auth generate --output tmp-auth.schema.ts` only as a reference, then delete that file.
 
-Sign-in flows run on the server only: `#lib/remotes/auth.remote.ts` → `AuthService` (`#services/auth.service.ts`) → `auth.api.*`. `AuthService` maps better-auth's error codes to the app's own. Components never call better-auth directly. Permission decisions load the user row through `AuthService.getCurrentUser` instead of trusting the session copy.
+Sign-in flows run on the server only: the route remotes (`src/routes/auth/login/login.remote.ts`, plus `register/` and `reset-password/` where the method has them) → `AuthService` (`#services/auth.service.ts`) → `auth.api.*`. `AuthService` maps better-auth's error codes to the app's own. Components never call better-auth directly. Permission decisions load the user row through `AuthService.getCurrentUser` instead of trusting the session copy.
 <!-- #endif -->
 
 Shared helpers, created the first time a layer needs them (keep them tiny):
@@ -220,9 +220,14 @@ The third argument is a **field name**, never an identity — `can('create', 'po
 Methods that deliberately span every user (`listAll`, admin listings, anything returning hidden rows) are gated on `can('access', 'admin')`, because the per-entity `read` actions are granted to plain users for their own/visible rows.
 <!-- #endif -->
 
-## 5. Remote layer — `#lib/remotes/*.remote.ts`
+## 5. Remote layer — `*.remote.ts`
 
 SvelteKit remote functions. This is the only layer allowed to call `error()` from `@sveltejs/kit`.
+
+Where each remote function lives:
+
+- A remote used in one place (`form`, `query` or `command`) goes in that route's directory, named after the route: `src/routes/auth/login/login.remote.ts`.
+- A remote used in more than one place (several routes, or a shared component) goes in `#lib/remotes/<entity>.remote.ts`. When a second place starts using a route's remote, move it there.
 
 - `query(schema, handler)` for reads, `command(schema, handler)` for writes. First arg is a Zod schema (inline `z.object({...})` or a bare `z.uuid()` etc).
 - `const event = getRequestEvent();` as the first line of the handler.
@@ -302,5 +307,6 @@ type Permissions = MongoAbility<
 - Don't put Zod validation, db calls, or server-only imports in the Schema layer.
 - Don't call the Query layer directly from the Remote layer — always go through a Service.
 - Don't call `error()` from anywhere except the Remote layer.
+- Don't put a remote in `#lib/remotes` while only one route uses it; keep it in that route's directory.
 - Don't swallow errors — always `return err(...)` and log via `Log`.
 - Don't use classes or default exports.

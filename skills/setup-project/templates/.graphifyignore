@@ -1,0 +1,5 @@
+# Installed agent tooling, not project source: keeps the code graph focused
+# on the actual project instead of skill scripts and reference docs.
+.claude/skills/
+.agents/
+node_modules/

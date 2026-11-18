@@ -10,7 +10,7 @@
 		{
 			"name": "mehdikhody-skills",
 			"source": "./",
-			"description": "setup-sveltekit-project: scaffold a SvelteKit app with my stack, skills, graphify and CLAUDE.md rules."
+			"description": "setup-sveltekit-project: scaffold a SvelteKit app with my stack, skills, graphify and CLAUDE.md rules. setup-project: my core skills, graphify and CLAUDE.md rules for a raw project."
 		}
 	]
 }

@@ -21,7 +21,7 @@ As a Claude Code plugin:
 
 | Skill | What it does |
 | --- | --- |
-| [`setup-sveltekit-project`](skills/setup-sveltekit-project/SKILL.md) | Scaffolds a SvelteKit 3 app: `sv` add-ons; Postgres on Docker Desktop via Drizzle; optional better-auth (username + password, always-on SMS 2FA over FarazSMS); Paraglide (fa/en, with the Vazirmatn font for fa); shadcn-svelte; the third-party skills below; graphify; Matt Pocock skills config; my `CLAUDE.md` rules and layered architecture (Remote → Service → Query → DB) with a worked `post` example. Invoke with `/setup-sveltekit-project`. |
+| [`setup-sveltekit-project`](skills/setup-sveltekit-project/SKILL.md) | Scaffolds a SvelteKit 3 app: `sv` add-ons; Drizzle with Postgres, MySQL or SQLite (Docker Desktop or a custom URL); optional better-auth with a choice of sign-in method (username + password + SMS OTP, phone + password, phone OTP only, email + password; SMS over FarazSMS); Paraglide (fa/en, with the Vazirmatn font for fa); shadcn-svelte; the third-party skills below; graphify; Matt Pocock skills config; my `CLAUDE.md` rules and layered architecture (Remote → Service → Query → DB) with a worked `post` example. Invoke with `/setup-sveltekit-project`. |
 
 ## Third-party skills
 

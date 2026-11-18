@@ -132,6 +132,30 @@ npx shadcn-svelte@latest init --preset b1f2J64kkE --css src/routes/layout.css --
 
 It ends with one Yes/No prompt (overwrite the CSS variables in `layout.css`) that can't be answered from a non-interactive shell. Run it in a terminal the user can see (in the Claude desktop app, `run_in_terminal`) and answer **Yes**, or ask the user to run it and confirm. Then `npm ci`.
 
+### Persian font (when `fa` is one of the locales)
+
+Run this after shadcn init, because init overwrites `layout.css`:
+
+1. `npm i vazirmatn`
+2. In `src/routes/layout.css`, right after `@import 'tailwindcss';`, add `@import 'vazirmatn/Vazirmatn-Variable-font-face.css';`. This is a single variable woff2 covering weights 100–900, family name `'Vazirmatn'`.
+3. Make Persian pages use it. The `<html lang>` comes from Paraglide (`%paraglide.lang%`), so scope the font to `html:lang(fa)` and keep the preset's fonts as the Latin fallback. Look at how the preset defines `--font-sans` and `--font-heading` in `layout.css`:
+   - In `@theme`, or as plain `:root` variables, so the utilities read `var(--font-sans)`: override the variables after the preset's definitions:
+     ```css
+     html:lang(fa) {
+     	--font-sans: 'Vazirmatn', <preset sans stack>;
+     	--font-heading: 'Vazirmatn', <preset heading stack>;
+     }
+     ```
+   - In `@theme inline`, so the utilities hard-code the stack: add an unlayered rule instead:
+     ```css
+     html:lang(fa) body,
+     html:lang(fa) .font-sans,
+     html:lang(fa) .font-heading {
+     	font-family: 'Vazirmatn', <preset stack>;
+     }
+     ```
+4. Check it in the browser on a `fa` page: the computed `font-family` of body text and headings starts with Vazirmatn, and on an `en` page it doesn't.
+
 ## 9. Skills
 
 Copy `<skill>/skills-lock.json` to the app root and restore every pinned third-party skill for Claude Code:

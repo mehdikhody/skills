@@ -31,21 +31,19 @@ import {
 	USERNAME_MIN_LENGTH, // @if username
 	USERNAME_REGEX, // @if username
 } from '#lib/schema/user.schema.ts';
-import { Sms } from '#lib/server/sms/sms.ts'; // @if phone
+import { OTPService } from '#services/otp.service.ts'; // @if phone
 
 // #if phone
 /** Sends a verification code by SMS; better-auth reports a thrown APIError to its caller. */
 const sendCode = async (to: string, code: string) => {
-	const phone = Phone.normalize(to);
-	if (!phone) {
-		throw APIError.from('BAD_REQUEST', {
-			code: 'INVALID_PHONE_NUMBER',
-			message: 'Invalid phone number'
-		});
-	}
-
-	const result = await Sms.send({ to: phone, pattern: 'verification-code', values: { code } });
+	const result = await OTPService.send(to, code);
 	if (result.isErr()) {
+		if (result.error === 'INVALID_PHONE_NUMBER') {
+			throw APIError.from('BAD_REQUEST', {
+				code: 'INVALID_PHONE_NUMBER',
+				message: 'Invalid phone number'
+			});
+		}
 		throw APIError.from('INTERNAL_SERVER_ERROR', { code: result.error, message: 'SMS failed' });
 	}
 };

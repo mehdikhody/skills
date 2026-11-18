@@ -168,7 +168,7 @@ What this gives you:
 | `src/lib/server/services/auth.service.ts` | every sign-in flow through `auth.api.*`, with better-auth's error codes mapped to the app's own; `getCurrentUser` reloads the row |
 | `src/lib/remotes/auth.remote.ts` | `form`/`command`/`query` remotes for login, the SMS code, registration and password reset (whichever the method has); field errors via `invalid`, the rest via `error` |
 | `src/lib/schema/user.schema.ts` | lengths, OTP settings, roles, and the Zod schemas of the auth forms |
-| `src/lib/phone-number.ts`, `src/lib/server/sms/` | phone methods only: Iranian mobile normalising/masking, console or FarazSMS transport |
+| `src/lib/phone-number.ts`, `src/lib/server/services/otp.service.ts`, `src/lib/server/services/farazsms.service.ts` | phone methods only: Iranian mobile normalising/masking; `OTPService` logs codes in dev or sends them through `FarazsmsService` |
 | `post` schema, query, service and remote | the worked example of every layer |
 
 | With roles | |

@@ -1,6 +1,6 @@
 ---
 name: setup-sveltekit-project
-description: Scaffold a new SvelteKit app with my standard stack (sv add-ons, Drizzle with Postgres/MySQL/SQLite on Docker Desktop or a custom URL, optional better-auth with a choice of sign-in methods (SMS over FarazSMS) and optional hard-coded or database roles, one file per table and per hook, Paraglide, shadcn-svelte), my skill group, graphify, the Matt Pocock skills config and my CLAUDE.md rules. Use when the user wants to start, create, bootstrap or scaffold a new SvelteKit project or app.
+description: Scaffold a new SvelteKit app with my standard stack (sv add-ons, Drizzle with Postgres/MySQL/SQLite on Docker Desktop or a custom URL, optional better-auth with a choice of sign-in methods (SMS over FarazSMS) and optional hard-coded or database roles, one file per table and per hook, Paraglide, shadcn-svelte), my skill group, graphify, the Matt Pocock skills config, my working rules in docs/agents/rules.md (imported from CLAUDE.md) and my layered architecture in docs/agents/architecture.md. Use when the user wants to start, create, bootstrap or scaffold a new SvelteKit project or app.
 disable-model-invocation: true
 ---
 
@@ -242,10 +242,11 @@ This installs 38 skills into `.agents/skills/`, linked from `.claude/skills/`: f
 4. Copy `<skill>/templates/.graphifyignore` to the app root, so installed skills stay out of the graph.
 5. `graphify update .` builds the first graph (AST only, no API cost).
 
-## 11. CLAUDE.md and CHANGELOG.md
+## 11. CLAUDE.md, agent rules and CHANGELOG.md
 
-1. Copy `<skill>/templates/CLAUDE.md` to the app root as `CLAUDE.md` and resolve its markers with the same answers as step 5: `node <skill>/scripts/apply-tags.mjs --db … --auth … --roles … CLAUDE.md`. That picks the stack lines, the database's DB-schema notes, the permissions sections and the `post` sentence. Then replace `{{APP_NAME}}`.
-   The template's `## Mobile view (ios-design)` section is the **Mobile only** answer from step 1. For **Desktop too**, replace that whole section (its heading and all its bullets) with the block below:
+1. Copy `<skill>/templates/CLAUDE.md` to the app root, and `<skill>/templates/docs/agents/` (`rules.md` and `architecture.md`) to `docs/agents/`. `CLAUDE.md` holds the stack overview, imports `rules.md` (`@docs/agents/rules.md`, loaded every session) and points to `architecture.md`, which the agent reads before it touches code under `src/`.
+   Resolve the markers with the same answers as step 5: `node <skill>/scripts/apply-tags.mjs --db … --auth … --roles … CLAUDE.md docs/agents/architecture.md`. That picks the stack lines in `CLAUDE.md`, and in `architecture.md` the database's DB-schema notes, the permissions sections and the `post` sentence. Then replace `{{APP_NAME}}` in `CLAUDE.md`, and run `grep -rn "@if \|#if \|#endif\|#file-if" CLAUDE.md docs/agents`: it must find nothing.
+   The `## Mobile view (ios-design)` section of `docs/agents/rules.md` is the **Mobile only** answer from step 1. For **Desktop too**, replace that whole section (its heading and all its bullets) with the block below:
    ```markdown
    ## App-like layout on every screen size (ios-design)
 
@@ -274,7 +275,7 @@ It writes `docs/agents/*.md` and adds an `## Agent skills` block to the root `CL
 ## 13. Checks and commits
 
 1. Compile Paraglide messages first: `npx @inlang/paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide`. Otherwise `#lib/paraglide/*` imports don't resolve until Vite has run once. Then run `npm run format`, `npm run lint` and `npm run check`, and fix anything they report.
-2. Commit in logical groups (one commit per reason: add-ons, database + auth scaffold, UI setup, skills + graphify, agent docs). No AI attribution in these commit messages: the project's own `CLAUDE.md` forbids it.
+2. Commit in logical groups (one commit per reason: add-ons, database + auth scaffold, UI setup, skills + graphify, agent docs). No AI attribution in these commit messages: the project's own `docs/agents/rules.md` forbids it.
 
 ## 14. Report
 

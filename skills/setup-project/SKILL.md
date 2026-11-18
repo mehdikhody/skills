@@ -1,12 +1,12 @@
 ---
 name: setup-project
-description: Set up a raw project folder (no app scaffold) with my skill group (find-skills, the Matt Pocock skills, caveman, caveman-commit, ponytail), the Matt Pocock skills config, graphify and my CLAUDE.md rules. Use when the user wants to set up, initialise or bootstrap the agent tooling of a new or existing project without a framework.
+description: Set up a raw project folder (no app scaffold) with my skill group (find-skills, the Matt Pocock skills, caveman, caveman-commit, ponytail), the Matt Pocock skills config, graphify and my working rules in docs/agents/rules.md (imported from CLAUDE.md). Use when the user wants to set up, initialise or bootstrap the agent tooling of a new or existing project without a framework.
 disable-model-invocation: true
 ---
 
 # Setup project
 
-Prepares a folder for agent work: skills, the Matt Pocock skills config, graphify and the working rules in `CLAUDE.md`. It scaffolds no app. Files this skill ships live next to this `SKILL.md`; below, `<skill>` means this skill's folder (it holds `templates/CLAUDE.md` and the dotfile `templates/.graphifyignore`).
+Prepares a folder for agent work: skills, the Matt Pocock skills config, graphify and the working rules in `docs/agents/rules.md`, which `CLAUDE.md` imports. It scaffolds no app. Files this skill ships live next to this `SKILL.md`; below, `<skill>` means this skill's folder (it holds `templates/CLAUDE.md`, `templates/docs/agents/rules.md` and the dotfile `templates/.graphifyignore`).
 
 Work through the steps in order. Ask the user only the questions in step 1 (through `AskUserQuestion`, recommended option first); decide everything else from this file. Keep a task list. Stop and report if a command fails; never skip a step silently. Never overwrite or delete a file that was there before the setup. The commands need network access; Git's LF/CRLF warnings on Windows are harmless.
 
@@ -18,7 +18,7 @@ Work through the steps in order. Ask the user only the questions in step 1 (thro
 
 Create the folder if it doesn't exist, however it was given. All later commands run inside it (the project directory).
 
-If `ls -A` shows anything other than `.git`, stop and ask whether to continue there. On yes, note which files already exist (step 8 reports them). Then, in a git repo, check `git status --porcelain` for the files this setup edits: `CLAUDE.md`, `.gitignore`, `.graphifyignore`, `.gitattributes`, `.claude/CLAUDE.md`, `.claude/settings.json`. Other dirty or untracked files are the user's: never stage them. If none of the listed files has uncommitted changes, ask nothing more; otherwise ask:
+If `ls -A` shows anything other than `.git`, stop and ask whether to continue there. On yes, note which files already exist (step 8 reports them). Then, in a git repo, check `git status --porcelain` for the files this setup edits: `CLAUDE.md`, `docs/agents/rules.md`, `.gitignore`, `.graphifyignore`, `.gitattributes`, `.claude/CLAUDE.md`, `.claude/settings.json`. Other dirty or untracked files are the user's: never stage them. If none of the listed files has uncommitted changes, ask nothing more; otherwise ask:
 
 **`<files>` have uncommitted changes, and the setup edits them. What now?**
 - **I'll commit or stash first** (default): wait until the user says they're done, then re-check.
@@ -43,15 +43,19 @@ The Matt Pocock line installs every skill in his repo (`triage` and `setup-matt-
 
 Make the **Skills** commit (step 7) before going on.
 
-## 4. CLAUDE.md rules
+## 4. Working rules
 
-The rules are in `<skill>/templates/CLAUDE.md`: a `# Working rules` heading and three sections, `## Grilling …`, `## Commits` and `## /implement-spec model routing`. A section runs from its `##` heading to just before the next `##` heading.
+The rules are in `<skill>/templates/docs/agents/rules.md`: a `# Working rules` heading and three sections, `## Grilling …`, `## Commits` and `## /implement-spec model routing`. A section runs from its `##` heading to just before the next `##` heading. They go to `docs/agents/rules.md`, and the root `CLAUDE.md` imports that file with the line `@docs/agents/rules.md`, so Claude Code loads the rules every session.
 
-- **No `CLAUDE.md` yet**: copy the template to the root as `CLAUDE.md`.
-- **`CLAUDE.md` exists**: never change or remove its lines; only add.
-  - If the last byte isn't a newline, add one.
-  - First, for each template section whose heading is already there (e.g. the user's own `## Commits`), append to the end of that section each template bullet whose rule it doesn't already state. The two Commits rules (grouped commits, no AI attribution) must end up in the file either way.
-  - Then, if any template section's `##` heading is still missing: append a `# Working rules` heading unless the file has one, then each missing section verbatim and in template order. Exactly one blank line goes before each appended heading.
+1. **`docs/agents/rules.md`**
+   - **Doesn't exist**: copy the template there.
+   - **Exists** (e.g. a re-run): never change or remove its lines; only add.
+     - If the last byte isn't a newline, add one.
+     - First, for each template section whose heading is already there (e.g. its own `## Commits`), append to the end of that section each template bullet whose rule it doesn't already state. The two Commits rules (grouped commits, no AI attribution) must end up in the file either way.
+     - Then, if any template section's `##` heading is still missing: append a `# Working rules` heading unless the file has one, then each missing section verbatim and in template order. Exactly one blank line goes before each appended heading.
+2. **`CLAUDE.md`**
+   - **Doesn't exist**: copy `<skill>/templates/CLAUDE.md` to the root. It holds only the import line.
+   - **Exists**: never change or remove its lines, and don't merge the rules into it, even where it has a section of its own such as `## Commits`. If no line is exactly `@docs/agents/rules.md`: add a newline if the last byte isn't one, then one blank line and `@docs/agents/rules.md`.
 
 Then add `.claude/worktrees/` to `.gitignore` (create the file if missing; skip the line if it's already there). The routing rules create worktrees there.
 
@@ -92,7 +96,7 @@ Then make the **graphify** commit (step 7).
 
 ## 7. Commits
 
-Three commits, each made where steps 3, 5 and 6 say. Stage the paths listed, never `git add -A` or `git add .`, and leave out any file the user chose to leave out in step 1. Messages are plain imperative summaries with no trailers: no `Co-Authored-By`, no "Generated with" line, no other AI attribution, even before `CLAUDE.md` exists and whatever attribution the harness suggests.
+Three commits, each made where steps 3, 5 and 6 say. Stage the paths listed, never `git add -A` or `git add .`, and leave out any file the user chose to leave out in step 1. Messages are plain imperative summaries with no trailers: no `Co-Authored-By`, no "Generated with" line, no other AI attribution, even before the rules exist and whatever attribution the harness suggests.
 
 1. **Skills**: `.claude/skills/`, `skills-lock.json`, and `.agents/` if the CLI created it.
 2. **Agent docs**: `CLAUDE.md`, `.gitignore`, `docs/agents/`, `GLOSSARY.md`, `docs/adr/`.

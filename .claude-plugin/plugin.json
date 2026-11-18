@@ -1,0 +1,10 @@
+{
+	"name": "mehdikhody-skills",
+	"version": "0.1.0",
+	"description": "setup-sveltekit-project: scaffold a SvelteKit app with my stack, skills, graphify and CLAUDE.md rules.",
+	"author": {
+		"name": "mehdikhody"
+	},
+	"repository": "https://github.com/mehdikhody/skills",
+	"license": "MIT"
+}

@@ -1,0 +1,16 @@
+{
+	"name": "mehdikhody-skills",
+	"owner": {
+		"name": "mehdikhody"
+	},
+	"metadata": {
+		"description": "My own agent skills, plus a pinned lock of the third-party skills I install in every project."
+	},
+	"plugins": [
+		{
+			"name": "mehdikhody-skills",
+			"source": "./",
+			"description": "setup-sveltekit-project: scaffold a SvelteKit app with my stack, skills, graphify and CLAUDE.md rules."
+		}
+	]
+}

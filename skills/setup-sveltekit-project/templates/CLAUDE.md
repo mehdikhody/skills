@@ -30,6 +30,15 @@ Build all UI from shadcn-svelte components (see the `shadcn-svelte` skill). Add 
 
 If shadcn-svelte has no component for the job, look at [shadcn-svelte-extras](https://shadcn-svelte-extras.com/) (e.g. modal, stepper, tags input, phone input, file drop zone, tree view). Install with `shadcn-svelte add https://shadcn-svelte-extras.com/r/<name>.json`. Extras land in `src/lib/components/ui` and share its raw-element exemption. If neither library fits, ask before hand-building or installing dependencies or libraries.
 
+## Mobile view (ios-design)
+
+On mobile viewports the website should look and behave like a native app. For layout and navigation on mobile, follow the `ios-design` skill: the app shell, a bottom tab bar for top-level sections, navigation-bar titles and back buttons, sheets instead of centered dialogs, safe areas, touch-target sizes, and keyboard-aware forms. Apply its guidance to this web app (Svelte, Tailwind, shadcn-svelte). Ignore its SwiftUI, UIKit and React Native code.
+
+- This applies to mobile only. Gate it with Tailwind's responsive prefixes (mobile-first styles, then `md:` and up for desktop), so the tablet and desktop website keeps its normal web layout (sidebar, top navigation, dialogs).
+- Mobile-only pieces, such as the tab bar or a sheet in place of a dialog, are still built from shadcn-svelte components (e.g. `Drawer` for sheets), following the UI components rule above.
+- Account for `env(safe-area-inset-*)` and set `viewport-fit=cover` in `app.html`, so the tab bar and headers clear the notch and home indicator.
+- For everything outside mobile layout and navigation, `ios-design` does not apply.
+
 ## Browser verification
 
 Verify UI changes in the running dev app (`npm run dev`) with the `agent-browser` skill: open the page, exercise the change, and check the console for errors. Don't claim a UI change works without looking at it.

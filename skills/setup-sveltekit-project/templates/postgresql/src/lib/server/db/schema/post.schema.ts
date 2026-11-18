@@ -1,4 +1,4 @@
-// #file-if auth
+// #file-if auth,demo
 export type Post = typeof PostTable.$inferSelect;
 export type NewPost = typeof PostTable.$inferInsert;
 

@@ -14,18 +14,19 @@ import { extname, join } from 'node:path';
 
 // Setup answers map to tags; `--tags a,b` adds raw ones.
 const USAGE =
-	'usage: apply-tags.mjs --db none|postgresql|mysql|sqlite --auth none|username|phone-password|phone-otp|email --roles none|hardcoded|db [--tags a,b] <dir-or-file>...';
+	'usage: apply-tags.mjs --db none|postgresql|mysql|sqlite --auth none|username|phone-password|phone-otp|email --roles none|hardcoded|db --demo yes|no [--tags a,b] <dir-or-file>...';
 const CHOICES = {
 	db: ['none', 'postgresql', 'mysql', 'sqlite'],
 	auth: ['none', 'username', 'phone-password', 'phone-otp', 'email'],
-	roles: ['none', 'hardcoded', 'db']
+	roles: ['none', 'hardcoded', 'db'],
+	demo: ['yes', 'no']
 };
 
 const args = process.argv.slice(2);
 const options = {};
 const targets = [];
 for (let i = 0; i < args.length; i++) {
-	const flag = /^--(db|auth|roles|tags)$/.exec(args[i]);
+	const flag = /^--(db|auth|roles|demo|tags)$/.exec(args[i]);
 	if (flag) options[flag[1]] = args[++i];
 	else targets.push(args[i]);
 }
@@ -54,6 +55,7 @@ if (options.auth !== 'none') tags.add('auth').add(`login-${options.auth}`);
 if (options.auth === 'username') tags.add('username').add('two-factor');
 if (['username', 'phone-password', 'phone-otp'].includes(options.auth)) tags.add('phone');
 if (options.roles !== 'none') tags.add('permissions').add(`roles-${options.roles}`);
+if (options.demo === 'yes') tags.add('demo');
 console.log(`apply-tags: ${[...tags].sort().join(', ') || '(no tags)'}`);
 
 const EXTENSIONS = new Set(['.ts', '.js', '.mjs', '.svelte', '.md', '.css', '.json', '.html']);

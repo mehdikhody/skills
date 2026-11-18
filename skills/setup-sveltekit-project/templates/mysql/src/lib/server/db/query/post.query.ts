@@ -1,4 +1,4 @@
-// #file-if auth
+// #file-if auth,demo
 import type { SQL } from 'drizzle-orm';
 import type { NewPost, Post } from '#db/schema/post.schema.ts';
 import type { PostStatus } from '#lib/schema/post.schema.ts';

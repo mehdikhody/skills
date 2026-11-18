@@ -23,12 +23,14 @@ const DEFAULT_ROLES: DefaultRole[] = [
 		id: GUEST_ROLE_ID,
 		name: 'Guest',
 		description: 'Anonymous visitors',
-		rules: [{ action: 'read', subject: 'post', conditions: { status: 'PUBLISHED' } }]
+		rules: [{ action: 'read', subject: 'post', conditions: { status: 'PUBLISHED' } }] // @if demo
+		rules: [] // @if !demo
 	},
 	{
 		id: 'USER',
 		name: 'User',
 		description: 'Every signed-up account',
+		// #if demo
 		rules: [
 			{ action: 'read', subject: 'post', conditions: { status: 'PUBLISHED' } },
 			{ action: 'create', subject: 'post' },
@@ -36,11 +38,15 @@ const DEFAULT_ROLES: DefaultRole[] = [
 			{ action: 'update', subject: 'post', conditions: { authorId: '${user.id}' } },
 			{ action: 'delete', subject: 'post', conditions: { authorId: '${user.id}' } }
 		]
+		// #else
+		rules: []
+		// #endif
 	},
 	{
 		id: 'ADMIN',
 		name: 'Admin',
 		description: 'Full access',
+		// #if demo
 		rules: [
 			{ action: 'access', subject: 'admin' },
 			{ action: 'create', subject: 'post' },
@@ -48,6 +54,9 @@ const DEFAULT_ROLES: DefaultRole[] = [
 			{ action: 'update', subject: 'post' },
 			{ action: 'delete', subject: 'post' }
 		]
+		// #else
+		rules: [{ action: 'access', subject: 'admin' }]
+		// #endif
 	}
 ];
 

@@ -39,7 +39,7 @@ Ask in rounds through `AskUserQuestion`, at most 4 questions per call. A questio
 
 **Round 3**
 
-7. **Sign-in method** (only if better-auth is yes). Every option also gets the `post` example and server-side auth flows (`AuthService` + the remote functions in `src/routes/auth/`):
+7. **Sign-in method** (only if better-auth is yes). Every option also gets server-side auth flows (`AuthService` + the remote functions in `src/routes/auth/`):
    - **Username + password + phone OTP** (default): sign in with username and password, then an always-on SMS code to the phone. The phone is required and verified at signup.
    - **Phone + password**: sign in with phone and password. The phone is verified by SMS code at signup; there's no second step at sign-in.
    - **Phone OTP only**: passwordless. Each sign-in sends an SMS code, and the first verified code creates the account.
@@ -49,6 +49,11 @@ Ask in rounds through `AskUserQuestion`, at most 4 questions per call. A questio
    - **Hard-coded roles** (default): `USER_ROLES` in code, a `role` enum column on the user, and CASL rules per role in `#lib/permissions.ts`.
    - **Database roles**: `role` and `role_permission` tables. Each role's CASL rules are stored as rows, loaded per request (cached), and seeded with `GUEST`, `USER` and `ADMIN` on first start.
    - **No**: no roles and no `@casl/ability`. Services check sign-in and ownership directly.
+9. **Demo code?** (only if better-auth is yes)
+   - **Yes** (default): the `post` entity in every layer (Zod schema, table, query, service, remote) and its permission rules, as a worked example to copy.
+   - **No**: rules only. `docs/agents/architecture.md` still explains every layer, but no `post` files, table or permission rules are created.
+
+Never keep sv's own demos, whatever the answer: the add-ons run with their demo options off, and step 5 deletes the samples sv writes anyway.
 
 SMS goes through `SmsService`: FarazSMS once its API key and line are set, otherwise the server console in dev (production refuses to send without them).
 
@@ -131,12 +136,14 @@ All template code is in `<skill>/templates/`. Its files carry conditional marker
    - `src/lib/server/db/schema.ts` (the sample `task` table) and `src/lib/server/db/auth.schema.ts`.
    - `src/lib/server/auth.ts`.
    - The `auth:schema` script in `package.json`. Auth tables are hand-written, one file each, so the better-auth CLI must not regenerate them into a single file.
+   - sv's demos: `src/lib/vitest-examples/` (vitest's `Welcome`/`greet` samples and their specs) and `src/routes/page.svelte.e2e.ts` (playwright's sample test). Empty `src/routes/+page.svelte` (the "Welcome to SvelteKit" page) but keep the file, so `/` still renders.
+   - With no tests left, let the runners pass on an empty suite: add `passWithNoTests: true` to `test` in `vite.config.ts`, and change the `test:e2e` script to `playwright install && playwright test --pass-with-no-tests`.
 2. **Copy** `<skill>/templates/app/` into the project root, overwriting. With a database, also copy `<skill>/templates/<postgresql|mysql|sqlite>/` on top.
 3. **Resolve the markers** (from the project root):
    ```sh
-   node <skill>/scripts/apply-tags.mjs --db <none|postgresql|mysql|sqlite> --auth <none|username|phone-password|phone-otp|email> --roles <none|hardcoded|db> src
+   node <skill>/scripts/apply-tags.mjs --db <none|postgresql|mysql|sqlite> --auth <none|username|phone-password|phone-otp|email> --roles <none|hardcoded|db> --demo <yes|no> src
    ```
-   Map the answers as follows. Sign-in method: Username + password + phone OTP → `username`, Phone + password → `phone-password`, Phone OTP only → `phone-otp`, Email + password → `email`. Roles: Hard-coded → `hardcoded`, Database → `db`, No → `none`. No better-auth means `--auth none --roles none`.
+   Map the answers as follows. Sign-in method: Username + password + phone OTP → `username`, Phone + password → `phone-password`, Phone OTP only → `phone-otp`, Email + password → `email`. Roles: Hard-coded → `hardcoded`, Database → `db`, No → `none`. Demo code: Yes → `yes`, No → `no`. No better-auth means `--auth none --roles none --demo no`.
    Then run `grep -rn "@if \|#if \|#endif\|#file-if" src --include=*.ts`: it must find nothing.
 4. **Wire it up:**
    - Add the subpath imports to `package.json` `"imports"`, next to the `#lib` entries sv created:
@@ -170,7 +177,7 @@ What this gives you:
 | `src/lib/remotes/auth.remote.ts` | the shared `getCurrentUser` query and `logout` command |
 | `src/lib/schema/user.schema.ts` | lengths, OTP settings, roles, and the Zod schemas of the auth forms |
 | `src/lib/phone-number.ts`, `src/lib/server/services/sms.service.ts` | phone methods only: Iranian mobile normalising/masking; `SmsService` sends free-text (`send`), pattern (`sendPattern`) and verification-code (`sendOtp`) SMS through FarazSMS when configured, else to the console in dev |
-| `post` schema, query, service and remote | the worked example of every layer |
+| `post` schema, table, query, service and remote | demo code only: the worked example of every layer, with its relation and permission rules |
 
 | With roles | |
 | --- | --- |
@@ -264,7 +271,7 @@ Then keep the installed skills away from the project's tooling:
 ## 11. CLAUDE.md, agent rules and CHANGELOG.md
 
 1. Copy `<skill>/templates/CLAUDE.md` to the app root, and `<skill>/templates/docs/agents/` (`rules.md` and `architecture.md`) to `docs/agents/`. graphify (step 10) has already created a root `CLAUDE.md` with a `## graphify` block: keep that block and append it after the template's content, or Claude Code stops using the graph. `CLAUDE.md` holds the stack overview, imports `rules.md` (`@docs/agents/rules.md`, loaded every session) and points to `architecture.md`, which the agent reads before it touches code under `src/`.
-   Resolve the markers with the same answers as step 5: `node <skill>/scripts/apply-tags.mjs --db … --auth … --roles … CLAUDE.md docs/agents/architecture.md`. That picks the stack lines in `CLAUDE.md`, and in `architecture.md` the database's DB-schema notes, the permissions sections and the `post` sentence. Then replace `{{APP_NAME}}` in `CLAUDE.md`, and run `grep -rn "@if \|#if \|#endif\|#file-if" CLAUDE.md docs/agents`: it must find nothing.
+   Resolve the markers with the same answers as step 5: `node <skill>/scripts/apply-tags.mjs --db … --auth … --roles … --demo … CLAUDE.md docs/agents/architecture.md`. That picks the stack lines in `CLAUDE.md`, and in `architecture.md` the database's DB-schema notes, the permissions sections and, with demo code, the sentence pointing at the `post` files. The rules' own `post` snippets stay either way: they illustrate the rules. Then replace `{{APP_NAME}}` in `CLAUDE.md`, and run `grep -rn "@if \|#if \|#endif\|#file-if" CLAUDE.md docs/agents`: it must find nothing.
    The `## Mobile view (ios-design)` section of `docs/agents/rules.md` is the **Mobile only** answer from step 1. For **Desktop too**, replace that whole section (its heading and all its bullets) with the block below:
    ```markdown
    ## App-like layout on every screen size (ios-design)

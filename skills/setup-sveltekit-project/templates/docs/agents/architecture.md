@@ -20,7 +20,7 @@ Shared helpers, created the first time a layer needs them (keep them tiny):
 - `#lib/server/logger.ts`: `createLogger(scope)` returning `{ info, warn, error, verbose }`.
 - `#lib/server/pagination.ts`: `paginate(items, total, page, limit)` returning `{ data, pagination: { total, limit, page, pages, remaining } }`.
 
-<!-- #if auth -->
+<!-- #if auth,demo -->
 The `post` entity (`#lib/schema/post.schema.ts`, `#db/schema/post.schema.ts`, `#db/query/post.query.ts`, `#services/post.service.ts`, `#lib/remotes/post.remote.ts`) is the worked example of every layer below. Copy its shape for new entities. It was scaffolded before the logger and pagination helpers existed: when you create them, add its `Log` calls and paginate its list.
 <!-- #endif -->
 

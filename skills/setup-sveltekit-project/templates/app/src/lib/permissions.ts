@@ -1,19 +1,22 @@
 // #file-if permissions
 import type { MongoAbility, RawRuleOf } from '@casl/ability'; // @if roles-db
 import type { MongoAbility } from '@casl/ability'; // @if roles-hardcoded
-import type { Post } from '#db/schema/post.schema.ts';
+import type { Post } from '#db/schema/post.schema.ts'; // @if demo
 import type { UserRole } from '#lib/schema/user.schema.ts'; // @if roles-hardcoded
 import { AbilityBuilder, createMongoAbility } from '@casl/ability'; // @if roles-hardcoded
 import { createMongoAbility } from '@casl/ability'; // @if roles-db
 
 type UserSubject = { id: string; role?: string | null };
-type PostSubject = Pick<Post, 'authorId' | 'status'>;
+type PostSubject = Pick<Post, 'authorId' | 'status'>; // @if demo
 
+// Add an `[action, subject]` tuple here for every action and subject the code checks.
 export type Permissions = MongoAbility<
-	['access', 'admin'] | ['create' | 'read' | 'update' | 'delete', PostSubject | 'post']
+	| ['access', 'admin']
+	| ['create' | 'read' | 'update' | 'delete', PostSubject | 'post'] // @if demo
 >;
 
 // #if roles-hardcoded
+// #if demo
 /** Anonymous requests: published posts only. */
 export const defineGuestPermissions = () => {
 	const { build, can } = new AbilityBuilder<Permissions>(createMongoAbility);
@@ -22,18 +25,28 @@ export const defineGuestPermissions = () => {
 
 	return build();
 };
+// #else
+/** Anonymous requests: nothing yet. Add rules here as entities appear. */
+export const defineGuestPermissions = () => {
+	const { build } = new AbilityBuilder<Permissions>(createMongoAbility);
+
+	return build();
+};
+// #endif
 
 export const definePermissionsFor = (user: UserSubject) => {
 	const { build, can } = new AbilityBuilder<Permissions>(createMongoAbility);
 	const role = (user.role ?? 'USER') as UserRole;
 
+	// #if demo
 	can('read', 'post', { status: 'PUBLISHED' });
 	can('create', 'post');
 	can(['read', 'update', 'delete'], 'post', { authorId: user.id });
 
+	// #endif
 	if (role === 'ADMIN') {
 		can('access', 'admin');
-		can(['read', 'update', 'delete'], 'post');
+		can(['read', 'update', 'delete'], 'post'); // @if demo
 	}
 
 	return build();

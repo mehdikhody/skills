@@ -1,4 +1,4 @@
-// #file-if auth
+// #file-if auth,demo
 import type { RequestEvent } from '@sveltejs/kit';
 import type {
 	PostCreateParams,

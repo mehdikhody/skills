@@ -1,4 +1,4 @@
-// #file-if auth
+// #file-if auth,demo
 import { error } from '@sveltejs/kit';
 import { z } from 'zod';
 import { command, getRequestEvent, query } from '$app/server';

@@ -1,4 +1,4 @@
-// #file-if auth
+// #file-if auth,demo
 import { z } from 'zod';
 
 export const POST_STATUSES = ['DRAFT', 'PUBLISHED'] as const;

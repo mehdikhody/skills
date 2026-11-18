@@ -1,6 +1,6 @@
 ---
 name: setup-sveltekit-project
-description: Scaffold a new SvelteKit app with my standard stack (sv add-ons, Drizzle with Postgres/MySQL/SQLite on Docker Desktop or a custom URL, optional better-auth with a choice of sign-in methods including phone OTP over FarazSMS, Paraglide, shadcn-svelte), my skill group, graphify, the Matt Pocock skills config and my CLAUDE.md rules. Use when the user wants to start, create, bootstrap or scaffold a new SvelteKit project or app.
+description: Scaffold a new SvelteKit app with my standard stack (sv add-ons, Drizzle with Postgres/MySQL/SQLite on Docker Desktop or a custom URL, optional better-auth with a choice of sign-in methods (SMS over FarazSMS) and optional hard-coded or database roles, one file per table and per hook, Paraglide, shadcn-svelte), my skill group, graphify, the Matt Pocock skills config and my CLAUDE.md rules. Use when the user wants to start, create, bootstrap or scaffold a new SvelteKit project or app.
 disable-model-invocation: true
 ---
 
@@ -39,12 +39,16 @@ Ask in rounds through `AskUserQuestion`, at most 4 questions per call. A questio
 
 **Round 3**
 
-7. **Sign-in method** (only if better-auth is yes). Every option also gets CASL permissions and the `post` example:
+7. **Sign-in method** (only if better-auth is yes). Every option also gets the `post` example and server-side auth flows (`AuthService` + `auth.remote.ts`):
    - **Username + password + phone OTP** (default): sign in with username and password, then an always-on SMS code to the phone. The phone is required and verified at signup.
    - **Phone + password**: sign in with phone and password. The phone is verified by SMS code at signup; there's no second step at sign-in.
    - **Phone OTP only**: passwordless. Each sign-in sends an SMS code, and the first verified code creates the account.
    - **Email + password**: better-auth's default. No phone and no SMS.
-   If the user types another method via "Other", build it from the closest variant in step 6 and say what you changed.
+   If the user types another method via "Other", build it from the closest option in step 5 and say what you changed.
+8. **Roles and permissions?** (only if better-auth is yes)
+   - **Hard-coded roles** (default): `USER_ROLES` in code, a `role` enum column on the user, and CASL rules per role in `#lib/permissions.ts`.
+   - **Database roles**: `role` and `role_permission` tables. Each role's CASL rules are stored as rows, loaded per request (cached), and seeded with `GUEST`, `USER` and `ADMIN` on first start.
+   - **No**: no roles and no `@casl/ability`. Services check sign-in and ownership directly.
 
 SMS always goes through FarazSMS, with a console transport in dev.
 
@@ -93,7 +97,7 @@ Then install the libraries the architecture rules use. Always:
 npm i neverthrow zod
 ```
 
-Add `@casl/ability` only when better-auth was chosen.
+Add `@casl/ability` only when roles and permissions were chosen (hard-coded or database).
 
 ## 4. Database (only with drizzle)
 
@@ -119,67 +123,63 @@ With better-auth, also set `ORIGIN="http://localhost:5173"` and `BETTER_AUTH_SEC
 
 ## 5. Layering scaffold
 
-Add these subpath imports to `package.json` `"imports"`, next to the `#lib` entries `sv` created:
+All template code is in `<skill>/templates/`. Its files carry conditional markers, and `<skill>/scripts/apply-tags.mjs` keeps or drops lines and whole files for the step 1 answers. Never edit the markers by hand.
 
-```json
-"#db": "./src/lib/server/db/index.ts",
-"#db/*": "./src/lib/server/db/*",
-"#services/*": "./src/lib/server/services/*"
-```
+1. **Remove what sv generated and the templates replace:**
+   - `src/lib/server/db/schema.ts` (the sample `task` table) and `src/lib/server/db/auth.schema.ts`.
+   - `src/lib/server/auth.ts`.
+   - The `auth:schema` script in `package.json`. Auth tables are hand-written, one file each, so the better-auth CLI must not regenerate them into a single file.
+2. **Copy** `<skill>/templates/app/` into the project root, overwriting. With a database, also copy `<skill>/templates/<postgresql|mysql|sqlite>/` on top.
+3. **Resolve the markers** (from the project root):
+   ```sh
+   node <skill>/scripts/apply-tags.mjs --db <none|postgresql|mysql|sqlite> --auth <none|username|phone-password|phone-otp|email> --roles <none|hardcoded|db> src
+   ```
+   Map the answers as follows. Sign-in method: Username + password + phone OTP → `username`, Phone + password → `phone-password`, Phone OTP only → `phone-otp`, Email + password → `email`. Roles: Hard-coded → `hardcoded`, Database → `db`, No → `none`. No better-auth means `--auth none --roles none`.
+   Then run `grep -rn "@if \|#if \|#endif\|#file-if" src --include=*.ts`: it must find nothing.
+4. **Wire it up:**
+   - Add the subpath imports to `package.json` `"imports"`, next to the `#lib` entries sv created:
+     ```json
+     "#db": "./src/lib/server/db/index.ts",
+     "#db/*": "./src/lib/server/db/*",
+     "#services/*": "./src/lib/server/services/*"
+     ```
+   - With a database:
+     - In `drizzle.config.ts`, set `schema: './src/lib/server/db/schema'`, so it reads the whole folder.
+     - Keep sv's `src/lib/server/db/index.ts`, which already uses the chosen driver. Only change its schema import to `import * as schema from './schema/index.ts';`.
 
-With drizzle, move the DB schema into a folder, one file per entity:
+What this gives you:
 
-- Delete the sample `src/lib/server/db/schema.ts` (the `task` table).
-- Move `src/lib/server/db/auth.schema.ts` to `src/lib/server/db/schema/auth.schema.ts` (only with better-auth).
-- In `drizzle.config.ts`, set `schema: './src/lib/server/db/schema/*.schema.ts'`.
-- In `package.json`, point the `auth:schema` script's `--output` at `src/lib/server/db/schema/auth.schema.ts`.
-- Keep sv's `src/lib/server/db/index.ts`, which already uses the chosen driver. Only change its schema import to `import * as schema from './schema/index.ts';`.
-- Without better-auth, create `src/lib/server/db/schema/index.ts` as an empty barrel (`export {};`) for future entities.
-
-## 6. better-auth + permissions + example entity (only with better-auth)
-
-Copy everything under `<skill>/templates/auth/` into the app, keeping paths and overwriting what `sv` generated. The templates are written for **PostgreSQL + Username + password + phone OTP**. Adapt them for the other answers as described below.
-
-| File | What it is |
+| Always | |
 | --- | --- |
-| `src/env.ts` | sv's variables plus `SMS_TRANSPORT` and `FARAZSMS_*` |
-| `src/app.d.ts` | `locals.user`, `locals.session`, `locals.permissions` |
-| `src/hooks.server.ts` | paraglide + better-auth; sets guest or user permissions on every request |
-| `src/lib/server/auth.ts` | username, phoneNumber and twoFactor (SMS OTP only) plugins; 2FA forced on for every user; phone required at signup |
-| `src/lib/auth-client.ts` | browser auth client with the matching plugins |
-| `src/lib/phone-number.ts` | Iranian mobile normalisation (+98 E.164), local form, placeholder email |
-| `src/lib/server/sms/sms.ts`, `farazsms.ts` | `console` transport in dev, FarazSMS pattern API in prod |
-| `src/lib/permissions.ts` | CASL `definePermissionsFor` / `defineGuestPermissions` |
-| `src/lib/schema/user.schema.ts`, `post.schema.ts` | shared constants and Zod input schemas |
-| `src/lib/server/db/schema/index.ts`, `db/schema/post.schema.ts` | table barrel and the `post` table |
-| `src/lib/server/db/query/post.query.ts` | Query layer example |
-| `src/lib/server/services/post.service.ts` | Service layer example (type + instance permission checks) |
-| `src/lib/remotes/post.remote.ts` | Remote layer example |
+| `src/hooks.server.ts` | only composes hooks: `sequence(ParaglideHook, AuthHook)`; with database roles also `init` (seeds the roles) |
+| `src/lib/server/hooks/paraglide.hook.ts` | locale + `lang`/`dir` in `app.html` |
+| `src/app.d.ts`, `src/env.ts` | `locals` types; env vars for the database, better-auth and SMS (only those in use) |
 
-### Database variants
+| With better-auth | |
+| --- | --- |
+| `src/lib/server/hooks/auth.hook.ts` | session on `locals`; `locals.permissions` when roles are on |
+| `src/lib/server/auth.ts` | better-auth with the chosen method's plugins. `drizzleAdapter` gets the right `provider` and `schema: { user: UserTable, session: SessionTable, account: AccountTable, verification: VerificationTable, twoFactor: TwoFactorTable }` |
+| `src/lib/server/db/schema/{user,session,account,verification}.schema.ts` | better-auth's tables, one file each, `XTable` exports with `X`/`NewX` types; only the columns the method needs |
+| `…/schema/two-factor.schema.ts` | Username method only |
+| `…/schema/relations.schema.ts`, `…/schema/index.ts` | every relation in one file; a barrel of every table |
+| `src/lib/server/db/query/user.query.ts` | user lookups for `AuthService` |
+| `src/lib/server/services/auth.service.ts` | every sign-in flow through `auth.api.*`, with better-auth's error codes mapped to the app's own; `getCurrentUser` reloads the row |
+| `src/lib/remotes/auth.remote.ts` | `form`/`command`/`query` remotes for login, the SMS code, registration and password reset (whichever the method has); field errors via `invalid`, the rest via `error` |
+| `src/lib/schema/user.schema.ts` | lengths, OTP settings, roles, and the Zod schemas of the auth forms |
+| `src/lib/phone-number.ts`, `src/lib/server/sms/` | phone methods only: Iranian mobile normalising/masking, console or FarazSMS transport |
+| `post` schema, query, service and remote | the worked example of every layer |
 
-The base templates are written for PostgreSQL. For the others, copy the variant files on top of them (all paths are kept):
+| With roles | |
+| --- | --- |
+| `src/lib/permissions.ts` | the `Permissions` type; hard-coded: `definePermissionsFor` / `defineGuestPermissions`; database: `buildPermissions` |
+| database roles only | `…/schema/role.schema.ts` (`RoleTable`, `RolePermissionTable`), `…/query/role.query.ts`, `…/services/permission.service.ts`, `#lib/schema/role.schema.ts` |
 
-- **MySQL**: copy `<skill>/templates/variants/mysql/`. Its `post.schema.ts` uses `mysql-core`, and `post.query.ts` reads rows back inside transactions, because MySQL has no `RETURNING`.
-- **SQLite**: copy `<skill>/templates/variants/sqlite/`. Only `post.schema.ts` uses `sqlite-core`; the base query file works as is.
+These combinations are type-checked, linted and run through `drizzle-kit generate` against fresh sv apps:
+- PostgreSQL: every sign-in method × every roles option.
+- MySQL and SQLite: three each.
+- No auth, and no database.
 
-Every `auth.ts` template says `drizzleAdapter(db, { provider: 'pg' })`. Set the provider to `'mysql'` or `'sqlite'` to match what sv generated.
-
-For MySQL or SQLite, also edit the new project's `CLAUDE.md` (step 11):
-- In the overview line, name the right database.
-- In the DB schema layer, swap `pgEnum`/`AnyPgColumn`/`uuid` for the dialect's equivalents, taking them from the variant `post.schema.ts`.
-- In General conventions, fix the IDs line.
-
-### Sign-in method variants
-
-The base `auth.ts` and `auth-client.ts` are **Username + password + phone OTP**. For the other methods, copy the variant folder on top of the base templates. Each `auth.ts` starts with a comment that describes its client flows.
-
-- **Username + password + phone OTP**: base templates only.
-- **Phone + password**: `<skill>/templates/variants/auth-phone-password/`. Phone + password sign-in (`signIn.phoneNumber`). The phone is verified by SMS at signup, and an unverified phone can't sign in (`requireVerification`). There's no second step at sign-in.
-- **Phone OTP only**: `<skill>/templates/variants/auth-phone-otp/`. Passwordless: `phoneNumber.sendOtp` + `phoneNumber.verify`, and the first verify creates the account (`signUpOnVerification` with a placeholder email).
-- **Email + password**: `<skill>/templates/variants/auth-email-password/`. No plugins. Its `src/env.ts` has no SMS variables. Delete `src/lib/phone-number.ts` and `src/lib/server/sms/` after copying, and skip the `.env.example` SMS block below. `role`, the permissions and the `post` example stay.
-
-Then:
+## 6. Env and SMS (only with better-auth)
 
 1. With a phone method, append to `.env.example`:
    ```sh
@@ -191,11 +191,11 @@ Then:
    # FARAZSMS_LINE_NUMBER=
    # FARAZSMS_PATTERN_VERIFICATION_CODE=   # one variable: code
    ```
-2. `npx svelte-kit sync` (the auth CLI needs the generated `$app/tsconfig`), then `npm run auth:schema` to regenerate `db/schema/auth.schema.ts` with the columns of the chosen plugins (username, phone, twoFactor) and `role`.
+2. `npx svelte-kit sync`.
 
 ## 7. Database schema push (only with drizzle)
 
-`npm run db:push`. If it prompts, the database is new, so accept creating every table.
+`npm run db:push`. If it prompts, the database is new, so accept creating every table. With database roles, the default roles are seeded the first time the app starts (`init` in `hooks.server.ts`).
 
 ## 8. shadcn-svelte
 
@@ -244,7 +244,7 @@ This installs 38 skills into `.agents/skills/`, linked from `.claude/skills/`: f
 
 ## 11. CLAUDE.md and CHANGELOG.md
 
-1. Copy `<skill>/templates/CLAUDE.md` to the app root as `CLAUDE.md` and replace `{{APP_NAME}}`. Without better-auth, drop better-auth and CASL from the overview line, along with the sentence about the `post` example. Keep the rules.
+1. Copy `<skill>/templates/CLAUDE.md` to the app root as `CLAUDE.md` and resolve its markers with the same answers as step 5: `node <skill>/scripts/apply-tags.mjs --db … --auth … --roles … CLAUDE.md`. That picks the stack lines, the database's DB-schema notes, the permissions sections and the `post` sentence. Then replace `{{APP_NAME}}`.
    The template's `## Mobile view (ios-design)` section is the **Mobile only** answer from step 1. For **Desktop too**, replace that whole section (its heading and all its bullets) with the block below:
    ```markdown
    ## App-like layout on every screen size (ios-design)
@@ -281,5 +281,7 @@ It writes `docs/agents/*.md` and adds an `## Agent skills` block to the root `CL
 Tell the user:
 
 - What was installed, the database name, and which steps were skipped and why.
+- With better-auth: the auth flows are ready as remote functions in `#lib/remotes/auth.remote.ts`; the login and registration pages still need building on them.
+- With database roles: the `GUEST`, `USER` and `ADMIN` roles are seeded on first start; change their rules in the `role_permission` table.
 - With a phone sign-in method: set the `FARAZSMS_*` variables and approve the verification-code pattern (variable `code`) in the FarazSMS panel before production. In dev, codes are printed to the server console.
 - Next: `npm run dev`. Run `/graphify .` once if they want the full semantic graph on top of the AST one.

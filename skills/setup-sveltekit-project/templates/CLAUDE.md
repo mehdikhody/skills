@@ -2,7 +2,20 @@
 
 {{APP_NAME}}: a SvelteKit app (Svelte 5, TypeScript, Node adapter).
 
-Uses: Drizzle ORM (Postgres, postgres.js), Zod, neverthrow (`Result` / `ok` / `err`), CASL (`@casl/ability`) for permissions, better-auth for sign-in, SvelteKit remote functions (`query` / `command` / `form` from `$app/server`), Paraglide for i18n, Tailwind CSS + shadcn-svelte for UI.
+Uses:
+- Drizzle ORM with PostgreSQL (postgres.js) <!-- @if db-postgresql -->
+- Drizzle ORM with MySQL (mysql2) <!-- @if db-mysql -->
+- Drizzle ORM with SQLite (better-sqlite3) <!-- @if db-sqlite -->
+- better-auth for sign-in: username + password, then an always-on SMS code (twoFactor) <!-- @if login-username -->
+- better-auth for sign-in: phone number + password, phone verified by SMS at signup <!-- @if login-phone-password -->
+- better-auth for sign-in: passwordless SMS codes to the phone <!-- @if login-phone-otp -->
+- better-auth for sign-in: email + password <!-- @if login-email -->
+- FarazSMS for SMS (`#lib/server/sms/`; codes are logged in dev) <!-- @if phone -->
+- CASL (`@casl/ability`) for permissions, with roles hard-coded in `#lib/permissions.ts` <!-- @if roles-hardcoded -->
+- CASL (`@casl/ability`) for permissions, with roles and their rules stored in the `role` / `role_permission` tables <!-- @if roles-db -->
+- Zod, neverthrow (`Result` / `ok` / `err`)
+- SvelteKit remote functions (`query` / `command` / `form` from `$app/server`)
+- Paraglide for i18n, Tailwind CSS + shadcn-svelte for UI
 
 # Working rules
 
@@ -70,12 +83,25 @@ Code always flows: **Remote → Service → Query → DB**. Never skip a layer (
 
 Imports use Node subpath imports from `package.json` `"imports"` (SvelteKit 3), always with the file extension: `#lib/*` → `src/lib/*`, `#db` → `src/lib/server/db/index.ts`, `#db/*` → `src/lib/server/db/*`, `#services/*` → `src/lib/server/services/*`. Env vars are declared in `src/env.ts` and read from `$app/env/private` / `$app/env/public`.
 
+Hooks: `src/hooks.server.ts` only composes hooks with `sequence(...)`. Each hook is a named `Handle` export in its own file, `#lib/server/hooks/<name>.hook.ts` (`ParaglideHook`, `AuthHook`, …). Put new request-level logic in a new hook file, not inline in `hooks.server.ts`.
+
+<!-- #if db -->
+Tables: one file per table in `#lib/server/db/schema/<name>.schema.ts`, all relations in `relations.schema.ts`, and every file re-exported from `schema/index.ts`. `drizzle.config.ts` reads the whole folder.
+<!-- #endif -->
+<!-- #if auth -->
+better-auth's tables (`UserTable`, `SessionTable`, `AccountTable`, `VerificationTable`, `TwoFactorTable`) are this project's own files, mapped in `#lib/server/auth.ts` (`drizzleAdapter(db, { schema: { user: UserTable, … } })`). Don't run `auth generate` into them. When a better-auth plugin needs new columns or tables, add them by hand, using `npx auth generate --output tmp-auth.schema.ts` only as a reference, then delete that file.
+
+Sign-in flows run on the server only: `#lib/remotes/auth.remote.ts` → `AuthService` (`#services/auth.service.ts`) → `auth.api.*`. `AuthService` maps better-auth's error codes to the app's own. Components never call better-auth directly. Permission decisions load the user row through `AuthService.getCurrentUser` instead of trusting the session copy.
+<!-- #endif -->
+
 Shared helpers, created the first time a layer needs them (keep them tiny):
 
 - `#lib/server/logger.ts`: `createLogger(scope)` returning `{ info, warn, error, verbose }`.
 - `#lib/server/pagination.ts`: `paginate(items, total, page, limit)` returning `{ data, pagination: { total, limit, page, pages, remaining } }`.
 
-The `post` entity (`#lib/schema/post.schema.ts`, `#db/schema/post.schema.ts`, `#db/query/post.query.ts`, `#services/post.service.ts`, `#lib/remotes/post.remote.ts`) is the worked example of every layer below, when better-auth is installed. Copy its shape for new entities. It was scaffolded before the logger and pagination helpers existed: when you create them, add its `Log` calls and paginate its list.
+<!-- #if auth -->
+The `post` entity (`#lib/schema/post.schema.ts`, `#db/schema/post.schema.ts`, `#db/query/post.query.ts`, `#services/post.service.ts`, `#lib/remotes/post.remote.ts`) is the worked example of every layer below. Copy its shape for new entities. It was scaffolded before the logger and pagination helpers existed: when you create them, add its `Log` calls and paginate its list.
+<!-- #endif -->
 
 ## 1. Schema layer — `#lib/schema/*.schema.ts`
 
@@ -105,10 +131,17 @@ Drizzle table/enum definitions only.
 
 - At the top of the file, before anything else: `export type X = typeof XTable.$inferSelect;` and `export type NewX = typeof XTable.$inferInsert;`
 - snake_case column names (`'first_name'`), camelCase field names (`firstName`).
-- Enums should reuse schema-layer constants where one exists: `pgEnum('post_status', POST_STATUSES)` rather than re-declaring the list.
-- Self-referencing FK: `.references((): AnyPgColumn => XTable.id)`.
+- Enums should reuse schema-layer constants where one exists: `pgEnum('post_status', POST_STATUSES)` rather than re-declaring the list. <!-- @if db-postgresql -->
+- Enums should reuse schema-layer constants where one exists: `mysqlEnum('status', POST_STATUSES)` rather than re-declaring the list. <!-- @if db-mysql -->
+- Enums should reuse schema-layer constants where one exists: `text('status', { enum: POST_STATUSES })` rather than re-declaring the list. <!-- @if db-sqlite -->
+- MySQL has no `RETURNING`: generate ids in code (`$defaultFn(() => crypto.randomUUID())`) and read rows back after writes. Use `varchar` with a length for keyed or unique text columns. <!-- @if db-mysql -->
+- SQLite: dates are `integer(..., { mode: 'timestamp_ms' })`, booleans `integer(..., { mode: 'boolean' })`, JSON `text(..., { mode: 'json' })`. The driver can't run async transactions. <!-- @if db-sqlite -->
+- Self-referencing FK: `.references((): AnyPgColumn => XTable.id)`. <!-- @if db-postgresql -->
+- Self-referencing FK: `.references((): AnyMySqlColumn => XTable.id)`. <!-- @if db-mysql -->
+- Self-referencing FK: `.references((): AnySQLiteColumn => XTable.id)`. <!-- @if db-sqlite -->
 - Every table gets `createdAt` (`notNull().defaultNow()`) and `updatedAt` (`notNull().defaultNow().$onUpdate(() => new Date())`).
 
+<!-- #if db-postgresql -->
 ```ts
 export type Post = typeof PostTable.$inferSelect;
 export type NewPost = typeof PostTable.$inferInsert;
@@ -129,6 +162,7 @@ export const PostTable = pgTable('post', {
 		.$onUpdate(() => new Date())
 });
 ```
+<!-- #endif -->
 
 ## 3. Query layer — `#lib/server/db/query/*.query.ts`
 
@@ -186,24 +220,30 @@ export const PostQuery = {
 
 ## 4. Service layer — `#lib/server/services/*.service.ts`
 
-Auth, permissions, and cross-entity orchestration. Calls Query, never raw `db`.
+Auth, permissions, and cross-entity orchestration. Calls Query, never raw `db`. <!-- @if permissions -->
+Auth, ownership checks, and cross-entity orchestration. Calls Query, never raw `db`. <!-- @if !permissions -->
 
 - Export a single object: `export const XService = { ... }`.
 - Methods that need auth take `event: RequestEvent` as the first argument.
 - Standard method shape:
-  1. `const { user, permissions } = event.locals;`
-  2. General check: `if (!permissions.can('action', 'subject')) return err('FORBIDDEN' as const);`
+  1. `const { user, permissions } = event.locals;` <!-- @if permissions -->
+  2. General check: `if (!permissions.can('action', 'subject')) return err('FORBIDDEN' as const);` <!-- @if permissions -->
+  1. `const { user } = event.locals;` <!-- @if !permissions -->
+  2. Auth check: `if (!user) return err('FORBIDDEN' as const);` <!-- @if !permissions -->
   3. Fetch via `XQuery`, propagate errors: `if (result.isErr()) return err(result.error);`
-  4. Instance-level check where relevant: `permissions.can('update', subject('post', result.value))`
+  4. Instance-level check where relevant: `permissions.can('update', subject('post', result.value))` <!-- @if permissions -->
+  4. Ownership check where relevant: `if (result.value.authorId !== user.id) return err('FORBIDDEN' as const);` <!-- @if !permissions -->
   5. Perform the mutation via `XQuery`
   6. `Log.info('X did thing:', id, ...)` on success
   7. `return ok(value)`
 - Same JSDoc convention as the Query layer (see above).
 - Rollback pattern for multi-step mutations: if a later step fails, undo the earlier one (e.g. call a `XService.revert` step from the remote) — this coordination lives in the layer calling the services (usually Remote), not inside a single service method, unless the whole operation belongs to one entity. The undo step must not itself be permission-checked, or a caller who is allowed to start the operation but not to undo it leaves the half-applied state behind.
 - Multi-step mutations must establish permission **before** the first side effect, not between steps (e.g. an `XService.assertX(event, id)` helper that runs every check up front and returns the loaded row).
-- `event.locals.user` is `undefined` on anonymous requests and `event.locals.permissions` is then an empty ability. Any method that reads `user` must check it (`if (!user || !permissions.can(...))`), or compare with `user?.id`.
+- `event.locals.user` is `undefined` on anonymous requests and `event.locals.permissions` then holds the guest rules. Any method that reads `user` must check it (`if (!user || !permissions.can(...))`), or compare with `user?.id`. <!-- @if permissions -->
+- `event.locals.user` is `undefined` on anonymous requests. Any method that reads `user` must check it (`if (!user)`), or compare with `user?.id`. <!-- @if !permissions -->
 - `createLogger('service:name')`.
 
+<!-- #if permissions -->
 ```ts
 const Log = createLogger('service:post');
 
@@ -257,6 +297,7 @@ if (userId !== user?.id && !permissions.can('access', 'admin')) return err('FORB
 The third argument is a **field name**, never an identity — `can('create', 'post', user.id)` does not scope anything to that user.
 
 Methods that deliberately span every user (`listAll`, admin listings, anything returning hidden rows) are gated on `can('access', 'admin')`, because the per-entity `read` actions are granted to plain users for their own/visible rows.
+<!-- #endif -->
 
 ## 5. Remote layer — `#lib/remotes/*.remote.ts`
 
@@ -292,11 +333,22 @@ export const updatePost = command(PostUpdateSchema, async (payload) => {
 });
 ```
 
+<!-- #if permissions -->
 ## 6. Permissions layer — `#lib/permissions.ts`
 
 - One CASL `Permissions` type: a union of `[action, subject]` tuples, subjects being either a `Pick<Entity, 'fieldsUsedInConditions'>` or the bare string name.
+<!-- #if roles-hardcoded -->
+- Roles are the `USER_ROLES` constant (`#lib/schema/user.schema.ts`), stored in the `user.role` enum column.
 - `definePermissionsFor(user)` builds rules per `user.role`, then applies cross-cutting restrictions after the role blocks (e.g. `if (user.banned) cannot('create', 'post');`).
 - `defineGuestPermissions()` returns the ability for anonymous requests, so `locals.permissions` is always set.
+<!-- #endif -->
+<!-- #if roles-db -->
+- Roles live in the `role` table (readable ids: `GUEST`, `USER`, `ADMIN`), and their CASL rules in `role_permission` (`action`, `subject`, `fields`, `conditions`, `inverted`). `user.role` references `role.id`.
+- `AuthHook` sets `locals.permissions` from `PermissionService.forUser(user)`. Anonymous requests use the `GUEST` role. Rules are cached for a minute; call `PermissionService.invalidate(roleId)` after changing them.
+- Conditions may use the `${user.id}` / `${user.role}` placeholders, filled per request by `buildPermissions`.
+- `PermissionService.seedDefaults()` (run from `init` in `hooks.server.ts`) seeds the default roles into an empty database. Change roles in the database afterwards, not in the seed.
+- The `Permissions` type still lists every action and subject the code checks: when code checks a new action or subject, add it there too.
+<!-- #endif -->
 - Field-level restrictions: `can('update', 'post', ['title'], { authorId: user.id })`.
 
 ```ts
@@ -307,6 +359,7 @@ type Permissions = MongoAbility<
 	| ['create' | 'read' | 'update' | 'delete', PostSubject | 'post']
 >;
 ```
+<!-- #endif -->
 
 # General conventions
 
@@ -316,12 +369,15 @@ type Permissions = MongoAbility<
 - Error handling: neverthrow (`ok`/`err`) everywhere except the Remote layer, where `Result` is converted to `error(status, message)`.
 - Error codes are `'SCREAMING_SNAKE_CASE' as const` string literals, not custom Error subclasses.
 - Logging: one `const Log = createLogger('layer:name');` per file. `.info` for successful mutations, `.warn` for invalid/rejected input, `.error` for caught exceptions, `.verbose` for expected/handled failures (e.g. signature validation failure).
-- IDs: better-auth user IDs are `text`; other entities use `uuid` strings.
+- IDs: better-auth user IDs are `text`; other entities use `uuid` strings. <!-- @if db-postgresql -->
+- IDs: better-auth user IDs are `varchar(36)`; other entities use `crypto.randomUUID()` strings in `varchar(36)`. <!-- @if db-mysql -->
+- IDs: better-auth user IDs are `text`; other entities use `crypto.randomUUID()` strings in `text`. <!-- @if db-sqlite -->
 - The Flow/Returns/Notes JSDoc block is scoped to the Query and Service layers only — never add it to Remote, Schema, DB schema, or Permissions files.
 
 # What NOT to do
 
-- Don't put permission checks in the Query layer.
+- Don't put permission checks in the Query layer. <!-- @if permissions -->
+- Don't put auth or ownership checks in the Query layer. <!-- @if !permissions -->
 - Don't put Zod validation, db calls, or server-only imports in the Schema layer.
 - Don't call the Query layer directly from the Remote layer — always go through a Service.
 - Don't call `error()` from anywhere except the Remote layer.

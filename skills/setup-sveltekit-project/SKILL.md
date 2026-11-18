@@ -158,48 +158,26 @@ Copy everything under `<skill>/templates/auth/` into the app, keeping paths and 
 
 ### Database variants
 
-In `auth.ts`, set `drizzleAdapter(db, { provider })` to whatever sv generated: `'pg'`, `'mysql'` or `'sqlite'`.
+The base templates are written for PostgreSQL. For the others, copy the variant files on top of them (all paths are kept):
 
-- **MySQL**: rewrite `db/schema/post.schema.ts` with `drizzle-orm/mysql-core`:
-  - `mysqlTable`, with the enum inline as `mysqlEnum('status', POST_STATUSES)`.
-  - `id: varchar('id', { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID())`.
-  - `authorId` as `varchar('author_id', { length: 36 })`, matching better-auth's user id column.
-  - `timestamp(...)` for both dates.
+- **MySQL**: copy `<skill>/templates/variants/mysql/`. Its `post.schema.ts` uses `mysql-core`, and `post.query.ts` reads rows back inside transactions, because MySQL has no `RETURNING`.
+- **SQLite**: copy `<skill>/templates/variants/sqlite/`. Only `post.schema.ts` uses `sqlite-core`; the base query file works as is.
 
-  MySQL has no `RETURNING`, so in `post.query.ts`:
-  - `create` generates the id, inserts, then selects the row.
-  - `update` and `remove` select the row first, then run the write, and return `POST_NOT_FOUND` when the row is missing.
-- **SQLite**: rewrite `db/schema/post.schema.ts` with `drizzle-orm/sqlite-core`:
-  - `sqliteTable`, with `status: text('status', { enum: POST_STATUSES }).notNull().default('DRAFT')`.
-  - `id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID())`.
-  - Dates as `integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())`, and `updatedAt` the same plus `.$onUpdate(() => new Date())`.
+Every `auth.ts` template says `drizzleAdapter(db, { provider: 'pg' })`. Set the provider to `'mysql'` or `'sqlite'` to match what sv generated.
 
-  `.returning()` works as is.
-- For either one, edit the new project's `CLAUDE.md` (step 11) to match:
-  - In the overview line, name the right database.
-  - In the DB schema layer, swap `pgEnum`/`AnyPgColumn`/`uuid` for the dialect's equivalents.
-  - In General conventions, fix the IDs line.
+For MySQL or SQLite, also edit the new project's `CLAUDE.md` (step 11):
+- In the overview line, name the right database.
+- In the DB schema layer, swap `pgEnum`/`AnyPgColumn`/`uuid` for the dialect's equivalents, taking them from the variant `post.schema.ts`.
+- In General conventions, fix the IDs line.
 
 ### Sign-in method variants
 
-Start from the template `auth.ts` and `auth-client.ts`, and rewrite the flow comment above `betterAuth(...)` to match the method you build.
+The base `auth.ts` and `auth-client.ts` are **Username + password + phone OTP**. For the other methods, copy the variant folder on top of the base templates. Each `auth.ts` starts with a comment that describes its client flows.
 
-- **Username + password + phone OTP**: use the templates as they are.
-- **Phone + password**:
-  - Remove the `username()` and `twoFactor(...)` plugins, along with `usernameClient()` and `twoFactorClient()` in `auth-client.ts`.
-  - In the user create hook, drop `twoFactorEnabled: true`.
-  - Add `requireVerification: true` to `phoneNumber({...})`, so an unverified phone can't sign in.
-  - Flows: sign up with `signUp.email({ email: Phone.placeholderEmail(phone), name, password, phoneNumber })`, then `phoneNumber.sendOtp` + `phoneNumber.verify`. Sign in with `signIn.phoneNumber({ phoneNumber, password })`. Reset the password with `phoneNumber.requestPasswordReset` + `phoneNumber.resetPassword`.
-- **Phone OTP only**:
-  - Remove `username()` and `twoFactor(...)` and their client plugins.
-  - Set `emailAndPassword: { enabled: false }`.
-  - In `phoneNumber({...})`, drop `sendPasswordResetOTP` and add `signUpOnVerification: { getTempEmail: (phone) => Phone.placeholderEmail(Phone.normalize(phone)!), getTempName: (phone) => phone }`.
-  - In the user create hook, drop `twoFactorEnabled: true`.
-  - Flow: `phoneNumber.sendOtp({ phoneNumber })` then `phoneNumber.verify({ phoneNumber, code })`. This signs the user in, and creates the account on the first verify.
-- **Email + password**:
-  - Remove the `username()`, `phoneNumber(...)` and `twoFactor(...)` plugins and the whole `databaseHooks` block. `auth-client.ts` keeps no plugins.
-  - Don't copy `phone-number.ts` or `sms/`. Remove the `SMS_TRANSPORT` and `FARAZSMS_*` entries from `src/env.ts`, and skip the `.env.example` SMS block below.
-  - Keep `role`, the permissions and the `post` example.
+- **Username + password + phone OTP**: base templates only.
+- **Phone + password**: `<skill>/templates/variants/auth-phone-password/`. Phone + password sign-in (`signIn.phoneNumber`). The phone is verified by SMS at signup, and an unverified phone can't sign in (`requireVerification`). There's no second step at sign-in.
+- **Phone OTP only**: `<skill>/templates/variants/auth-phone-otp/`. Passwordless: `phoneNumber.sendOtp` + `phoneNumber.verify`, and the first verify creates the account (`signUpOnVerification` with a placeholder email).
+- **Email + password**: `<skill>/templates/variants/auth-email-password/`. No plugins. Its `src/env.ts` has no SMS variables. Delete `src/lib/phone-number.ts` and `src/lib/server/sms/` after copying, and skip the `.env.example` SMS block below. `role`, the permissions and the `post` example stay.
 
 Then:
 
@@ -221,11 +199,13 @@ Then:
 
 ## 8. shadcn-svelte
 
+Run init with every path and alias given, so its only question is the final "overwrite the CSS variables in `layout.css`?" (default **Yes**). That prompt needs a real terminal, so pipe an Enter into it every 2 seconds until init exits:
+
 ```sh
-npx shadcn-svelte@latest init --preset b1f2J64kkE --css src/routes/layout.css --lib-alias "#lib" --components-alias "#lib/components" --utils-alias "#lib/utils" --hooks-alias "#lib/hooks" --ui-alias "#lib/components/ui"
+(for i in $(seq 1 90); do sleep 2; printf '\r'; done) | timeout 200 npx -y shadcn-svelte@latest init --preset b1f2J64kkE --css src/routes/layout.css --lib-alias "#lib" --components-alias "#lib/components" --utils-alias "#lib/utils" --hooks-alias "#lib/hooks" --ui-alias "#lib/components/ui"
 ```
 
-It ends with one Yes/No prompt (overwrite the CSS variables in `layout.css`) that can't be answered from a non-interactive shell. Run it in a terminal the user can see (in the Claude desktop app, `run_in_terminal`) and answer **Yes**, or ask the user to run it and confirm. Then `npm ci`.
+Run it in the shell; don't hand it to the user. It's done when the output ends with "Project initialization completed" and `components.json` exists. If it times out instead, run it once more the same way before reporting a failure. Then `npm ci`.
 
 ### Persian font (when `fa` is one of the locales)
 
@@ -233,22 +213,15 @@ Run this after shadcn init, because init overwrites `layout.css`:
 
 1. `npm i vazirmatn`
 2. In `src/routes/layout.css`, right after `@import 'tailwindcss';`, add `@import 'vazirmatn/Vazirmatn-Variable-font-face.css';`. This is a single variable woff2 covering weights 100–900, family name `'Vazirmatn'`.
-3. Make Persian pages use it. The `<html lang>` comes from Paraglide (`%paraglide.lang%`), so scope the font to `html:lang(fa)` and keep the preset's fonts as the Latin fallback. Look at how the preset defines `--font-sans` and `--font-heading` in `layout.css`:
-   - In `@theme`, or as plain `:root` variables, so the utilities read `var(--font-sans)`: override the variables after the preset's definitions:
-     ```css
-     html:lang(fa) {
-     	--font-sans: 'Vazirmatn', <preset sans stack>;
-     	--font-heading: 'Vazirmatn', <preset heading stack>;
-     }
-     ```
-   - In `@theme inline`, so the utilities hard-code the stack: add an unlayered rule instead:
-     ```css
-     html:lang(fa) body,
-     html:lang(fa) .font-sans,
-     html:lang(fa) .font-heading {
-     	font-family: 'Vazirmatn', <preset stack>;
-     }
-     ```
+3. The preset defines its fonts in `@theme inline` (`--font-sans` and `--font-heading`, both `'Roboto Variable', sans-serif`), so the utilities hard-code the stack and overriding the variables does nothing. The `<html lang>` comes from Paraglide, so add this unlayered rule at the end of `layout.css`. Copy the Latin fallback from the preset's `--font-sans` line in case it changes:
+   ```css
+   /* Persian pages: Vazirmatn first; Latin text falls back to the preset font. */
+   html:lang(fa) body,
+   html:lang(fa) .font-sans,
+   html:lang(fa) .font-heading {
+   	font-family: 'Vazirmatn', 'Roboto Variable', sans-serif;
+   }
+   ```
 4. Check it in the browser on a `fa` page: the computed `font-family` of body text and headings starts with Vazirmatn, and on an `en` page it doesn't.
 
 ## 9. Skills

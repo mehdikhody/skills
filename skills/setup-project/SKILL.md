@@ -1,24 +1,31 @@
 ---
 name: setup-project
-description: Set up a raw project folder (no app scaffold) with my skill group (find-skills, the Matt Pocock skills, caveman, caveman-commit, ponytail), the Matt Pocock skills config, graphify and my working rules in docs/agents/rules.md (imported from CLAUDE.md). Use when the user wants to set up, initialise or bootstrap the agent tooling of a new or existing project without a framework.
+description: Set up the agent tooling of any project folder (new or existing, any framework) with my base skill group (standards, find-skills, the Matt Pocock skills, caveman, caveman-commit, ponytail), the Matt Pocock skills config, graphify, AGENTS.md / CLAUDE.md importing the standards skill, and a CHANGELOG.md. Works standalone and as the base step of framework setup skills such as setup-sveltekit-project. Use when the user wants to set up, initialise or bootstrap agent tooling for a project.
 disable-model-invocation: true
 ---
 
 # Setup project
 
-Prepares a folder for agent work: skills, the Matt Pocock skills config, graphify and the working rules in `docs/agents/rules.md`, which `CLAUDE.md` imports. It scaffolds no app. Files this skill ships live next to this `SKILL.md`; below, `<skill>` means this skill's folder (it holds `templates/CLAUDE.md`, `templates/docs/agents/rules.md` and the dotfile `templates/.graphifyignore`).
+Prepares a folder for agent work on any harness or model. It scaffolds no app. The file contents it writes are given inline in the steps below.
 
-Work through the steps in order. Ask the user only the questions in step 1 (through `AskUserQuestion`, recommended option first); decide everything else from this file. Keep a task list. Stop and report if a command fails; never skip a step silently. Never overwrite or delete a file that was there before the setup. The commands need network access; Git's LF/CRLF warnings on Windows are harmless.
+Work through the steps in order. Ask the user only the questions in step 1 (through the harness's structured question tool, such as `AskUserQuestion` or `ask_question`, recommended option first); decide everything else from this file. Keep a task list. Stop and report if a command fails; never skip a step silently. Never overwrite or delete a file that was there before the setup. The commands need network access; Git's LF/CRLF warnings on Windows are harmless.
+
+When another setup skill calls this one as its base, it passes the project folder and agent choice, so skip the questions in step 1 and, in step 7, make only the commits for steps that ran.
 
 ## 1. Where to set up
 
-**Where to set up the project?** Skip this question if the user's message already names the folder.
-- **Current directory** (default).
-- **Custom path**: the user types a path (via "Other"). It can be relative or absolute.
+Skip any question the user's message already answered.
 
-Create the folder if it doesn't exist, however it was given. All later commands run inside it (the project directory).
+1. **Where to set up the project?**
+   - **Current directory** (default).
+   - **Custom path**: the user types a path (via "Other"). It can be relative or absolute.
+2. **Which agents to install the skills for?**
+   - **Auto-detect** (default): no `-a` flag. The `skills` CLI installs into `.agents/skills/` and links the agents it detects.
+   - **Specific agents**: the user types agent names (via "Other"), passed as `-a <name> …`.
 
-If `ls -A` shows anything other than `.git`, stop and ask whether to continue there. On yes, note which files already exist (step 8 reports them). Then, in a git repo, check `git status --porcelain` for the files this setup edits: `CLAUDE.md`, `docs/agents/rules.md`, `.gitignore`, `.graphifyignore`, `.gitattributes`, `.claude/CLAUDE.md`, `.claude/settings.json`. Other dirty or untracked files are the user's: never stage them. If none of the listed files has uncommitted changes, ask nothing more; otherwise ask:
+Create the folder if it doesn't exist. All later commands run inside it (the project directory).
+
+If `ls -A` shows anything other than `.git`, stop and ask whether to continue there. On yes, note which files already exist (step 8 reports them). Then, in a git repo, check `git status --porcelain` for the files this setup edits: `AGENTS.md`, `CLAUDE.md`, `CHANGELOG.md`, `.gitignore`, `.graphifyignore`, `.gitattributes`, `.claude/CLAUDE.md`, `.claude/settings.json`. Other dirty or untracked files are the user's: never stage them. If none of the listed files has uncommitted changes, ask nothing more; otherwise ask:
 
 **`<files>` have uncommitted changes, and the setup edits them. What now?**
 - **I'll commit or stash first** (default): wait until the user says they're done, then re-check.
@@ -30,85 +37,89 @@ Unless the folder already is a git repo, run `git init -b main`.
 
 ## 3. Skills
 
-Install project-level for Claude Code. `-a claude-code -y` keeps every command from prompting; no `package.json` is needed.
+Install the latest versions at project level. `-y` keeps every command from prompting; no `package.json` is needed. Append `-a <agents>` to each command only if the user chose specific agents.
 
 ```sh
-npx -y skills add https://github.com/vercel-labs/skills --skill find-skills -a claude-code -y
-npx -y skills add mattpocock/skills -a claude-code -y
-npx -y skills add https://github.com/juliusbrussee/caveman --skill caveman caveman-commit -a claude-code -y
-npx -y skills add https://github.com/dietrichgebert/ponytail --skill ponytail -a claude-code -y
+npx -y skills add mehdikhody/skills --skill standards -y
+npx -y skills add https://github.com/vercel-labs/skills --skill find-skills -y
+npx -y skills add mattpocock/skills -y
+npx -y skills add https://github.com/juliusbrussee/caveman --skill caveman caveman-commit -y
+npx -y skills add https://github.com/dietrichgebert/ponytail --skill ponytail -y
 ```
 
-The Matt Pocock line installs every skill in his repo (`triage` and `setup-matt-pocock-skills` among them). Each skill is copied into `.claude/skills/<name>/`, and `skills-lock.json` at the root records them all, so `npx skills experimental_install -a claude-code` can restore them later.
+The Matt Pocock line installs every skill in his repo (`triage` and `setup-matt-pocock-skills` among them). Each skill lands in `.agents/skills/<name>/` (linked into the detected agent folders), and `skills-lock.json` at the root records them all, so `npx skills experimental_install` can restore them later.
+
+Then keep the agent link folders out of git. On Windows they are junctions, and git would commit each one as a full second copy of its `.agents/skills/` folder. Add to `.gitignore` (create the file if missing; skip lines already there):
+
+```gitignore
+# Skill links into .agents/skills; restore with: npx skills experimental_install
+.claude/skills/*
+!.claude/skills/graphify/
+```
 
 Make the **Skills** commit (step 7) before going on.
 
-## 4. Working rules
+## 4. Working standards (`AGENTS.md` and `CLAUDE.md`)
 
-The rules are in `<skill>/templates/docs/agents/rules.md`: a `# Working rules` heading and three sections, `## Grilling …`, `## Commits` and `## /implement-spec model routing`. A section runs from its `##` heading to just before the next `##` heading. They go to `docs/agents/rules.md`, and the root `CLAUDE.md` imports that file with the line `@docs/agents/rules.md`, so Claude Code loads the rules every session.
+`AGENTS.md` references `.agents/skills/standards/SKILL.md`, and `CLAUDE.md` imports `@AGENTS.md`, so every harness loads the working standards each session.
 
-1. **`docs/agents/rules.md`**
-   - **Doesn't exist**: copy the template there.
-   - **Exists** (e.g. a re-run): never change or remove its lines; only add.
-     - If the last byte isn't a newline, add one.
-     - First, for each template section whose heading is already there (e.g. its own `## Commits`), append to the end of that section each template bullet whose rule it doesn't already state. The two Commits rules (grouped commits, no AI attribution) must end up in the file either way.
-     - Then, if any template section's `##` heading is still missing: append a `# Working rules` heading unless the file has one, then each missing section verbatim and in template order. Exactly one blank line goes before each appended heading.
+1. **`AGENTS.md`**
+   - **Doesn't exist**: create it with this content:
+     ```markdown
+     @.agents/skills/standards/SKILL.md
+
+     Always load and follow the `standards` skill (`.agents/skills/standards/SKILL.md`) in every session.
+     ```
+   - **Exists**: never change or remove its lines. If no line references `.agents/skills/standards/SKILL.md`: add a newline if the last byte isn't one, then one blank line and the content above.
 2. **`CLAUDE.md`**
-   - **Doesn't exist**: copy `<skill>/templates/CLAUDE.md` to the root. It holds only the import line.
-   - **Exists**: never change or remove its lines, and don't merge the rules into it, even where it has a section of its own such as `## Commits`. If no line is exactly `@docs/agents/rules.md`: add a newline if the last byte isn't one, then one blank line and `@docs/agents/rules.md`.
+   - **Doesn't exist**: create it with the single line `@AGENTS.md`.
+   - **Exists**: never change or remove its lines. If no line is `@AGENTS.md`: add a newline if the last byte isn't one, then one blank line and `@AGENTS.md`.
+3. **`CHANGELOG.md`**: if it doesn't exist, create it with this content (Keep a Changelog 1.1.0). Never touch an existing one.
+   ```markdown
+   # Changelog
 
-Then add `.claude/worktrees/` to `.gitignore` (create the file if missing; skip the line if it's already there). The routing rules create worktrees there.
+   All notable changes to this project will be documented in this file.
+
+   The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+   and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+   ## [Unreleased]
+   ```
 
 ## 5. Matt Pocock skills config
 
-Configure what `.claude/skills/setup-matt-pocock-skills/SKILL.md` configures, without asking anything and without its confirm-and-edit step. Its answers here are fixed: local markdown issue tracker, default triage labels (`triage` was installed in step 3, so its Section B applies), single-context domain docs. Concretely:
-
-1. Copy only these three files from `.claude/skills/setup-matt-pocock-skills/` into `docs/agents/`: `issue-tracker-local.md` as `issue-tracker.md`, `triage-labels.md` and `domain.md`. Skip any that already exist.
-2. Append this block to the root `CLAUDE.md`, after one blank line. If an `## Agent skills` block is already there, replace that block's contents in place instead:
-   ```markdown
-   ## Agent skills
-
-   ### Issue tracker
-
-   Issues are local markdown files under `.scratch/<feature>/` in this repo. See `docs/agents/issue-tracker.md`.
-
-   ### Triage labels
-
-   Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
-
-   ### Domain docs
-
-   Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
-   ```
-3. If `GLOSSARY.md` doesn't exist, create it as `# Glossary`, a blank line, and `Domain terms for this project.` If `docs/adr/` doesn't exist or is empty, add `docs/adr/.gitkeep`.
+Run the `setup-matt-pocock-skills` skill (installed in step 3) and let it do the configuration. Don't ask the user its questions; use these answers: local markdown issue tracker, default triage labels, single-context domain docs.
 
 Make the **Agent docs** commit (step 7) before going on.
 
 ## 6. graphify
 
 1. If `graphify --version` fails: `uv tool install graphifyy` (needs uv: on Windows `winget install astral-sh.uv`), then `uv tool update-shell` if the command still isn't found.
-2. `graphify install --project` registers the skill in this repo: `.claude/skills/graphify/` and `.claude/CLAUDE.md`.
-3. `graphify hook install` adds the Claude Code hooks (`.claude/settings.json`), a `## graphify` block in the root `CLAUDE.md`, a merge driver in `.gitattributes`, and the git `post-commit`/`post-checkout` hooks that rebuild the graph.
-4. Copy `<skill>/templates/.graphifyignore` to the root, so installed skills stay out of the graph. If one exists, append only its missing lines.
-5. `graphify update .` builds the first graph (AST only, no API cost) in `graphify-out/`. It is committed: graphify's own `CLAUDE.md` block expects a committed `graph.json`.
+2. `graphify install --project` registers the skill in this repo.
+3. `graphify hook install` adds the agent hooks, a `## graphify` block, a merge driver in `.gitattributes`, and the git `post-commit`/`post-checkout` hooks that rebuild the graph.
+4. Create `.graphifyignore` at the root with the content below, so installed skills stay out of the graph. If one exists, append only its missing lines.
+   ```gitignore
+   # Installed agent tooling, not project source: keeps the code graph focused
+   # on the actual project instead of skill scripts and reference docs.
+   .claude/skills/
+   .agents/
+   node_modules/
+   ```
+5. `graphify update .` builds the first graph (AST only, no API cost) in `graphify-out/`. It is committed: graphify expects a committed `graph.json`.
 
 Then make the **graphify** commit (step 7).
 
 ## 7. Commits
 
-Three commits, each made where steps 3, 5 and 6 say. Stage the paths listed, never `git add -A` or `git add .`, and leave out any file the user chose to leave out in step 1. Messages are plain imperative summaries with no trailers: no `Co-Authored-By`, no "Generated with" line, no other AI attribution, even before the rules exist and whatever attribution the harness suggests.
+Commit following the `standards` skill (`.agents/skills/standards/SKILL.md`, installed in step 3; install it first if it's missing): `caveman-commit` messages, one commit per logical change, no AI attribution. Make one commit each for the skills (step 3), the agent docs (step 5) and graphify (step 6). Stage explicit paths, never `git add -A`, and leave out any file the user chose to leave out in step 1.
 
-1. **Skills**: `.claude/skills/`, `skills-lock.json`, and `.agents/` if the CLI created it.
-2. **Agent docs**: `CLAUDE.md`, `.gitignore`, `docs/agents/`, `GLOSSARY.md`, `docs/adr/`.
-3. **graphify**: `CLAUDE.md`, `.claude/CLAUDE.md`, `.claude/settings.json`, `.claude/skills/graphify/`, `.gitattributes`, `.graphifyignore`, `graphify-out/`.
-
-The post-commit hook rebuilds the graph in the background after each commit. The hook only exists from step 6 on, so only the graphify commit triggers it. After that commit, wait about 10 seconds, then run `git status --short`. If the rebuild changed `graphify-out/` (often just `cache/stat-index.json`), commit only `graphify-out/` as "Update graphify graph", and repeat the wait and check once. Any other leftover that the setup made is a bug in this run: report it. The user's own dirty or untracked files stay as they were.
+The graphify post-commit hook only exists from step 6 on and rebuilds the graph in the background after each commit. After the graphify commit, wait about 10 seconds, then run `git status --short`. If the rebuild changed `graphify-out/` (often just `cache/stat-index.json`), commit only `graphify-out/` as "Update graphify graph", and repeat the wait and check once. Any other leftover that the setup made is a bug in this run: report it. The user's own dirty or untracked files stay as they were.
 
 ## 8. Report
 
 Tell the user:
 
-- The project directory, and how many skills were installed (`grep -c '"computedHash"' skills-lock.json`).
+- The project directory, the agents targeted, and how many skills were installed (`grep -c '"computedHash"' skills-lock.json`).
 - Which files already existed and were appended to rather than created, any setup-edited file left uncommitted and why, and the user's own uncommitted or untracked files that were left untouched.
 - Which steps were skipped and why.
 - Next: run `/graphify .` once if they want the full semantic graph on top of the AST one.

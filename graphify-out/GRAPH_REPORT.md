@@ -1,17 +1,17 @@
 # Graph Report - skills  (2026-11-24)
 
 ## Corpus Check
-- 19 files · ~9,495 words
+- 19 files · ~9,432 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 4 file(s) not represented in the graph (top: (none) 4)
 
 ## Summary
-- 95 nodes · 89 edges · 15 communities (10 shown, 5 thin omitted)
+- 94 nodes · 88 edges · 15 communities (10 shown, 5 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `2c1d8ead`
+- Built from commit: `5ffcbe4a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -34,11 +34,11 @@
 
 ## God Nodes (most connected - your core abstractions)
 1. `Setup SvelteKit` - 10 edges
-2. `Setup project` - 9 edges
-3. `Setup Tauri` - 9 edges
-4. `Architecture: strict layering` - 9 edges
-5. `Working standards` - 7 edges
-6. `Svelte frontend standards` - 7 edges
+2. `Architecture: strict layering` - 9 edges
+3. `Setup project` - 9 edges
+4. `Setup Tauri` - 9 edges
+5. `Svelte frontend standards` - 7 edges
+6. `Working standards` - 6 edges
 7. `Domain Docs` - 5 edges
 8. `Issue tracker: Local Markdown` - 5 edges
 9. `Agent skills` - 4 edges
@@ -74,8 +74,8 @@ Cohesion: 0.25
 Nodes (8): 1. Required frontend companion skills, 2. Frontend `sv` add-ons, 3. `shadcn-svelte` initialization (`npx shadcn-svelte@latest init`), 4. UI components (`shadcn-svelte` & `shadcn-svelte-extras`), 5. Frontend design (`frontend-design`, `web-design-guidelines`, `ui-taste`, `ios-design`), 6. Browser verification (`agent-browser`), Persian font (`fa` locale), Svelte frontend standards
 
 ### Community 6 - "Working standards"
-Cohesion: 0.29
-Nodes (7): Before writing code (`ponytail`), Changelog, Codebase exploration (`graphify`), Commits (`caveman-commit`), Grilling (`grilling`, `grill-me`, `grill-with-docs`), Token efficiency (`caveman`), Working standards
+Cohesion: 0.33
+Nodes (6): Before writing code (`ponytail`), Changelog, Commits (`caveman-commit`), Grilling (`grilling`, `grill-me`, `grill-with-docs`), Token efficiency (`caveman`), Working standards
 
 ### Community 7 - "Domain Docs"
 Cohesion: 0.33
@@ -98,6 +98,6 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `Setup SvelteKit` connect `Setup SvelteKit` to `README.md`?**
   _High betweenness centrality (0.126) - this node is a cross-community bridge._
 - **Why does `Architecture: strict layering` connect `Architecture: strict layering` to `README.md`?**
-  _High betweenness centrality (0.125) - this node is a cross-community bridge._
+  _High betweenness centrality (0.126) - this node is a cross-community bridge._
 - **Why does `Setup project` connect `Setup project` to `README.md`?**
   _High betweenness centrality (0.113) - this node is a cross-community bridge._

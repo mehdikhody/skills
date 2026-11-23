@@ -1,6 +1,6 @@
 ---
 name: setup-project
-description: Set up the agent tooling of any project folder (new or existing, any framework) with my base skill group (standards, find-skills, the Matt Pocock skills, caveman, caveman-commit, ponytail), the Matt Pocock skills config, graphify, AGENTS.md / CLAUDE.md importing the standards skill, and a CHANGELOG.md. Works standalone and as the base step of framework setup skills such as setup-sveltekit-project. Use when the user wants to set up, initialise or bootstrap agent tooling for a project.
+description: Set up the agent tooling of any project folder (new or existing, any framework) with my base skill group (standards, find-skills, the Matt Pocock skills, caveman, caveman-commit, ponytail), the Matt Pocock skills config, graphify, AGENTS.md / CLAUDE.md importing the standards skill, and a CHANGELOG.md. Works standalone and as the base step of framework setup skills such as setup-sveltekit and setup-tauri. Use when the user wants to set up, initialise or bootstrap agent tooling for a project.
 disable-model-invocation: true
 ---
 

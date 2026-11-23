@@ -1,11 +1,11 @@
 ---
 name: standards
-description: Core working standards for every session and project across any agent harness or model: use caveman for lower read/write token usage, use graphify to find and explore the codebase before raw search, ask all grilling questions (grilling, grill-me, grill-with-docs) through the harness's structured question tool, use ponytail before writing code, use caveman-commit and logical non-AI-attributed commits when committing, and maintain CHANGELOG.md with Keep a Changelog 1.1.0. Auto-install any missing required skill or tool.
+description: Core working standards for every session and project across any agent harness or model: use caveman for lower read/write token usage, ask all grilling questions (grilling, grill-me, grill-with-docs) through the harness's structured question tool, use ponytail before writing code, use caveman-commit and logical non-AI-attributed commits when committing, and maintain CHANGELOG.md with Keep a Changelog 1.1.0. Auto-install any missing required skill.
 ---
 
 # Working standards
 
-Follow these rules in every session, regardless of platform, harness, or model. If any required companion skill (`caveman`, `caveman-commit`, `ponytail`, `graphify`) is not installed in the project yet, install it immediately without asking and then proceed.
+Follow these rules in every session, regardless of platform, harness, or model. If any required companion skill (`caveman`, `caveman-commit`, `ponytail`) is not installed in the project yet, install it immediately without asking and then proceed.
 
 ## Token efficiency (`caveman`)
 
@@ -15,17 +15,6 @@ Use the `caveman` skill for lower read and write token usage across the session.
   ```sh
   npx -y skills add https://github.com/juliusbrussee/caveman --skill caveman caveman-commit -y
   ```
-
-## Codebase exploration (`graphify`)
-
-Use the `graphify` skill to find and explore the codebase for lower token usage before falling back to raw grep or file-glob searches.
-
-- Read `graphify-out/GRAPH_REPORT.md` and query `graphify-out/graph.json` first to locate files, architecture boundaries, and symbol relationships.
-- If `graphify` or `graphify-out/graph.json` is missing in the project, install and build it automatically:
-  1. If `graphify --version` fails: `uv tool install graphifyy` (on Windows, if `uv` is missing: `winget install astral-sh.uv`, then `uv tool update-shell`).
-  2. `graphify install --project`
-  3. `graphify hook install`
-  4. `graphify update .`
 
 ## Grilling (`grilling`, `grill-me`, `grill-with-docs`)
 

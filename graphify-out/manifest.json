@@ -1,0 +1,116 @@
+{
+  ".claude-plugin/marketplace.json": {
+    "mtime": 1795465757.3666658,
+    "seen": 1795466220.9594474,
+    "ast_hash": "b24158dde5472e2ecf25611b9ebd5217",
+    "semantic_hash": ""
+  },
+  ".claude-plugin/plugin.json": {
+    "mtime": 1795465758.619133,
+    "seen": 1795466220.9594507,
+    "ast_hash": "5777cefb7adc42171923f7a0f3214701",
+    "semantic_hash": ""
+  },
+  ".claude/settings.json": {
+    "mtime": 1795466219.2952592,
+    "seen": 1795466220.9594522,
+    "ast_hash": "3ac995fbf93552a991ecab9b63f776aa",
+    "semantic_hash": ""
+  },
+  "skills-lock.json": {
+    "mtime": 1795466153.8598745,
+    "seen": 1795466220.9594526,
+    "ast_hash": "0ad75202b50fc4f8ae3db9a3263b3c36",
+    "semantic_hash": ""
+  },
+  ".claude/CLAUDE.md": {
+    "mtime": 1795466219.2876985,
+    "seen": 1795466220.9594533,
+    "ast_hash": "9b31786b637be3c13978bec4c2330752",
+    "semantic_hash": ""
+  },
+  "AGENTS.md": {
+    "mtime": 1795462185.1025815,
+    "seen": 1795466220.9594543,
+    "ast_hash": "36152f53d15352e889ed8426faa2787f",
+    "semantic_hash": ""
+  },
+  "CHANGELOG.md": {
+    "mtime": 1795466127.968035,
+    "seen": 1795466220.9594548,
+    "ast_hash": "080fc7aa8609c347de2bd745e9a0eaf2",
+    "semantic_hash": ""
+  },
+  "CLAUDE.md": {
+    "mtime": 1795466219.293733,
+    "seen": 1795466220.959455,
+    "ast_hash": "f67998acf972d86380647de0b6bdabb3",
+    "semantic_hash": ""
+  },
+  "GLOSSARY.md": {
+    "mtime": 1795466132.081315,
+    "seen": 1795466220.9594557,
+    "ast_hash": "32e126ee07fc26dc2a2526771a0ba99b",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1795465756.0097888,
+    "seen": 1795466220.9594562,
+    "ast_hash": "42442a7e11cb74ae8b8dd21415f3f918",
+    "semantic_hash": ""
+  },
+  "docs/agents/domain.md": {
+    "mtime": 1795032292.1054623,
+    "seen": 1795466220.9594567,
+    "ast_hash": "b20c849deb2944f6fa5365c51f9cd134",
+    "semantic_hash": ""
+  },
+  "docs/agents/issue-tracker.md": {
+    "mtime": 1795032292.0704782,
+    "seen": 1795466220.9594574,
+    "ast_hash": "f7a4c1d8300e294d0d8872dac7c37c52",
+    "semantic_hash": ""
+  },
+  "docs/agents/triage-labels.md": {
+    "mtime": 1795032292.0891435,
+    "seen": 1795466220.9594579,
+    "ast_hash": "d7e50dac17098ccade780750b97517a1",
+    "semantic_hash": ""
+  },
+  "skills/setup-project/SKILL.md": {
+    "mtime": 1795466089.7592745,
+    "seen": 1795466220.9594584,
+    "ast_hash": "91f68fb95b8bf48ba71e5f0062b013fb",
+    "semantic_hash": ""
+  },
+  "skills/setup-sveltekit/SKILL.md": {
+    "mtime": 1795465376.7932744,
+    "seen": 1795466220.9594588,
+    "ast_hash": "9eb2a7d4c7352ed79c5cf19a6f3c2055",
+    "semantic_hash": ""
+  },
+  "skills/setup-tauri/SKILL.md": {
+    "mtime": 1795465736.6781347,
+    "seen": 1795466220.9594593,
+    "ast_hash": "1b5855107e44d80dfa124aa175a61056",
+    "semantic_hash": ""
+  },
+  "skills/standards/SKILL.md": {
+    "mtime": 1795462176.4728167,
+    "seen": 1795466220.9594598,
+    "ast_hash": "f6f994d35ef3467f88d762ae855779e9",
+    "semantic_hash": ""
+  },
+  "skills/svelte-standards/SKILL.md": {
+    "mtime": 1795463294.4976168,
+    "seen": 1795466220.9594603,
+    "ast_hash": "167a0a4103ea7e1c3b76daf9ce22a227",
+    "semantic_hash": ""
+  },
+  "skills/sveltekit-standards/SKILL.md": {
+    "mtime": 1795463813.2465196,
+    "seen": 1795466220.959461,
+    "ast_hash": "7b1c22ec10dfa8b50ebfb7d8e19cdce9",
+    "semantic_hash": ""
+  }
+}

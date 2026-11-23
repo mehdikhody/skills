@@ -2,3 +2,7 @@ node_modules/
 .DS_Store
 Thumbs.db
 .claude/worktrees/
+
+# Skill links into .agents/skills; restore with: npx skills experimental_install
+.claude/skills/*
+!.claude/skills/graphify/

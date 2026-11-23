@@ -95,9 +95,10 @@ Make the **Agent docs** commit (step 7) before going on.
 ## 6. graphify
 
 1. If `graphify --version` fails: `uv tool install graphifyy` (needs uv: on Windows `winget install astral-sh.uv`), then `uv tool update-shell` if the command still isn't found.
-2. `graphify install --project` registers the skill in this repo.
-3. `graphify hook install` adds the agent hooks, a `## graphify` block, a merge driver in `.gitattributes`, and the git `post-commit`/`post-checkout` hooks that rebuild the graph.
-4. Create `.graphifyignore` at the root with the content below, so installed skills stay out of the graph. If one exists, append only its missing lines.
+2. `graphify install --project` registers the skill in this repo (`.claude/skills/graphify/` and `.claude/CLAUDE.md` — leave `.claude/CLAUDE.md` as-is).
+3. `graphify hook install` adds the agent hooks, writes a `## graphify` block into the root `CLAUDE.md`, registers a merge driver in `.gitattributes`, and installs the git `post-commit`/`post-checkout` hooks that rebuild the graph.
+4. Move the `## graphify` block that `graphify hook install` added to the root `CLAUDE.md` into the root `AGENTS.md` (replacing any existing `## graphify` block in `AGENTS.md` if present), so every agent harness reads it and root `CLAUDE.md` stays just `@AGENTS.md`.
+5. Create `.graphifyignore` at the root with the content below, so installed skills stay out of the graph. If one exists, append only its missing lines.
    ```gitignore
    # Installed agent tooling, not project source: keeps the code graph focused
    # on the actual project instead of skill scripts and reference docs.
@@ -105,7 +106,7 @@ Make the **Agent docs** commit (step 7) before going on.
    .agents/
    node_modules/
    ```
-5. `graphify update .` builds the first graph (AST only, no API cost) in `graphify-out/`. It is committed: graphify expects a committed `graph.json`.
+6. `graphify update .` builds the first graph (AST only, no API cost) in `graphify-out/`. It is committed: graphify expects a committed `graph.json`.
 
 Then make the **graphify** commit (step 7).
 

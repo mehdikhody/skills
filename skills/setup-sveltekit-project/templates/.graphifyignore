@@ -1,5 +1,0 @@
-# Installed agent tooling, not project source: keeps the code graph focused
-# on the actual app instead of skill scripts and reference docs.
-.claude/skills/
-.agents/
-src/lib/paraglide/

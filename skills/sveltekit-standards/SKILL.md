@@ -1,6 +1,6 @@
 ---
 name: sveltekit-standards
-description: Full-stack and backend working standards for SvelteKit 3 apps across any agent harness or model. Extends svelte-standards and standards with backend sv add-ons (drizzle, better-auth, adapter-node, remoteFunctions), subpath imports (#lib/*, #db, #db/*, #services/*), composed hooks, one-file-per-table Drizzle schema, server-only better-auth flows, CASL permissions, and strict 6-layer architecture (Remote -> Service -> Query -> DB). Read before writing, editing, or reviewing any SvelteKit code.
+description: "Full-stack and backend working standards for SvelteKit 3 apps across any agent harness or model. Extends svelte-standards and standards with backend sv add-ons (drizzle, better-auth, adapter-node, remoteFunctions), subpath imports (#lib/*, #db, #db/*, #services/*), composed hooks, one-file-per-table Drizzle schema, server-only better-auth flows, CASL permissions, and strict 6-layer architecture (Remote -> Service -> Query -> DB). Read before writing, editing, or reviewing any SvelteKit code."
 ---
 
 # SvelteKit architecture & backend standards

@@ -1,6 +1,6 @@
 ---
 name: standards
-description: Core working standards for every session and project across any agent harness or model: use caveman for lower read/write token usage, ask all grilling questions (grilling, grill-me, grill-with-docs) through the harness's structured question tool, use ponytail before writing code, use caveman-commit and logical non-AI-attributed commits when committing, and maintain CHANGELOG.md with Keep a Changelog 1.1.0. Auto-install any missing required skill.
+description: "Core working standards for every session and project across any agent harness or model: use caveman for lower read/write token usage, ask all grilling questions (grilling, grill-me, grill-with-docs) through the harness's structured question tool, use ponytail before writing code, use caveman-commit and logical non-AI-attributed commits when committing, and maintain CHANGELOG.md with Keep a Changelog 1.1.0. Auto-install any missing required skill."
 ---
 
 # Working standards

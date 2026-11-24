@@ -5,4 +5,3 @@ Thumbs.db
 
 # Skill links into .agents/skills; restore with: npx skills experimental_install
 .claude/skills/*
-!.claude/skills/graphify/
